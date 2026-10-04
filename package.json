@@ -1,0 +1,16 @@
+{
+  "name": "dagleitv",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.28.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev:web": "pnpm --filter @dagleitv/web dev",
+    "dev:signaling": "pnpm --filter @dagleitv/signaling dev",
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm --filter @dagleitv/web build"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}
