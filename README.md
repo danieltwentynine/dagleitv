@@ -27,5 +27,7 @@ Requires Node 22+ and pnpm 10.
 
 ## Status
 
-Initial scaffold only. Milestones M1 to M5 (screen share, TURN, quality tuning,
-voice chat, polish) are not implemented yet.
+- M1 (bare P2P screen share + audio): implemented. `pnpm e2e` runs a two-page
+  smoke test with a synthetic source (needs `CHROMIUM_PATH`). Real-machine
+  checks are in `docs/m1-spike.md`.
+- M2 to M5 (TURN, quality tuning, voice chat, polish): not implemented.
