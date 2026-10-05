@@ -6,3 +6,5 @@ export * from "./layout";
 export * from "./signaling";
 export * from "./capture";
 export * from "./session";
+export * from "./ice";
+export * from "./stats";

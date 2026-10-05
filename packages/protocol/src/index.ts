@@ -24,3 +24,14 @@ export interface ServerToClientEvents {
 
 /** Room codes: 8+ chars, URL-safe. */
 export const ROOM_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
+
+/** HTTP endpoint on the signaling server that hands out ICE (STUN/TURN) servers. */
+export const ICE_PATH = "/ice";
+
+export interface IceServersResponse {
+  iceServers: { urls: string | string[]; username?: string; credential?: string }[];
+  /** True if TURN relay credentials are included (false = STUN only). */
+  turn: boolean;
+}
+
+export type IceErrorCode = "invalid-room" | "no-such-room" | "rate-limited";
