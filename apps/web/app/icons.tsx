@@ -1,0 +1,82 @@
+import type { ReactNode, SVGProps } from "react";
+
+type IconProps = SVGProps<SVGSVGElement> & { size?: number };
+
+function icon(children: ReactNode) {
+  return function Icon({ size = 18, ...props }: IconProps) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        {...props}
+      >
+        {children}
+      </svg>
+    );
+  };
+}
+
+export const TvIcon = icon(
+  <>
+    <rect x="2" y="7" width="20" height="14" rx="2" />
+    <path d="m17 2-5 5-5-5" />
+  </>,
+);
+
+export const ScreenShareIcon = icon(
+  <>
+    <rect x="2" y="3" width="20" height="14" rx="2" />
+    <path d="M8 21h8M12 17v4M12 7v6M9 10l3-3 3 3" />
+  </>,
+);
+
+export const StopIcon = icon(<rect x="6" y="6" width="12" height="12" rx="2" />);
+
+export const FullscreenIcon = icon(
+  <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />,
+);
+
+export const ExitFullscreenIcon = icon(
+  <path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3" />,
+);
+
+export const VolumeIcon = icon(
+  <>
+    <path d="M11 5 6 9H2v6h4l5 4V5z" />
+    <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" />
+  </>,
+);
+
+export const MuteIcon = icon(
+  <>
+    <path d="M11 5 6 9H2v6h4l5 4V5z" />
+    <path d="m22 9-6 6M16 9l6 6" />
+  </>,
+);
+
+export const LinkIcon = icon(
+  <>
+    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
+    <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+  </>,
+);
+
+export const StatsIcon = icon(<path d="M3 3v18h18M7 15l4-4 3 3 6-6" />);
+
+export const CloseIcon = icon(<path d="M18 6 6 18M6 6l12 12" />);
+
+export const RefreshIcon = icon(
+  <>
+    <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+    <path d="M21 3v5h-5" />
+  </>,
+);
+
+export const ArrowRightIcon = icon(<path d="M5 12h14M13 6l6 6-6 6" />);

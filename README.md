@@ -32,4 +32,7 @@ Requires Node 22+ and pnpm 10.
   checks are in `docs/m1-spike.md`.
 - M2 (TURN + forced-relay toggle + candidate-pair readout): implemented. Forced relay
   through Cloudflare TURN verified on one PC; runs on two real networks still pending. `pnpm e2e:ice` checks the `/ice` endpoint. Test procedure: `docs/m2-network-test.md`.
-- M3 to M5 (quality tuning, voice chat, polish): not implemented.
+- M5 (polish), UI part: "cozy cinema" redesign of the home and room pages
+  (status pill, empty states, volume, fullscreen with auto-hiding controls,
+  stats drawer, reconnect). Shortcuts in a room: `F` fullscreen, `M` mute.
+- M3 and M4 (quality tuning, voice chat): not implemented.

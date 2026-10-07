@@ -14,6 +14,12 @@ import {
   type ConnectionSnapshot,
   type Throughput,
 } from "@dagleitv/rtc-core";
+import { CloseIcon } from "../../icons";
+import { EnterRoom } from "./EnterRoom";
+import { TopBar } from "./TopBar";
+import { Stage } from "./Stage";
+import { StatsDrawer } from "./StatsDrawer";
+import styles from "./room.module.css";
 
 const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL ?? "http://localhost:4000";
 
@@ -25,10 +31,11 @@ const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL ?? "http://localhost
 export function Room({ roomId }: { roomId: string }) {
   const sessionRef = useRef<PeerSession | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [phase, setPhase] = useState<ConnectionPhase>("idle");
   const [joined, setJoined] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [remoteSharing, setRemoteSharing] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -37,6 +44,8 @@ export function Room({ roomId }: { roomId: string }) {
   const [forceRelay, setForceRelay] = useState(false);
   const [turnAvailable, setTurnAvailable] = useState<boolean | null>(null);
   const [net, setNet] = useState<{ snap: ConnectionSnapshot; rate: Throughput | null } | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     setForceRelay(new URLSearchParams(window.location.search).has("relay"));
@@ -61,10 +70,40 @@ export function Room({ roomId }: { roomId: string }) {
     return () => clearInterval(id);
   }, [phase]);
 
-  useEffect(() => () => sessionRef.current?.close(), []);
+  useEffect(
+    () => () => {
+      sessionRef.current?.close();
+      clearTimeout(toastTimer.current);
+    },
+    [],
+  );
 
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  }, []);
+
+  const copyLink = useCallback(async () => {
+    const link = window.location.origin + window.location.pathname;
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast("Link copied. Send it to your partner.");
+    } catch {
+      showToast("Couldn't copy. Copy the address bar instead.");
+    }
+  }, [showToast]);
+
+  /** Joins the room; also used to reconnect, replacing any previous session. */
   const join = useCallback(async () => {
     setError(null);
+    setJoining(true);
+    sessionRef.current?.close();
+    sessionRef.current = null;
+    setSharing(false);
+    setRemoteSharing(false);
+    setNeedsPlayClick(false);
+
     const session = new PeerSession({
       signaling: new SocketSignaling(SIGNALING_URL),
       iceTransportPolicy: forceRelay ? "relay" : "all",
@@ -74,7 +113,9 @@ export function Room({ roomId }: { roomId: string }) {
         return ice.iceServers;
       },
       events: {
-        onPhase: setPhase,
+        onPhase: (p) => {
+          if (sessionRef.current === session) setPhase(p);
+        },
         onRemoteSharing: setRemoteSharing,
         onLocalShareEnded: () => setSharing(false),
         onError: (e) => setError(e.message),
@@ -82,7 +123,11 @@ export function Room({ roomId }: { roomId: string }) {
           const video = videoRef.current;
           if (!video) return;
           video.srcObject = stream;
-          video.play().catch(() => setNeedsPlayClick(true));
+          // AbortError just means a later track interrupted this play(); only a
+          // blocked autoplay (NotAllowedError) needs the click-to-play button.
+          video.play().catch((e) => {
+            if (e instanceof Error && e.name === "NotAllowedError") setNeedsPlayClick(true);
+          });
         },
       },
     });
@@ -90,16 +135,23 @@ export function Room({ roomId }: { roomId: string }) {
     try {
       const result = await session.start(roomId);
       if (!result.ok) {
-        setError(result.error === "room-full" ? "Room is full (2 people max)." : "Invalid room code.");
+        setError(
+          result.error === "room-full"
+            ? "Room is full. Only two people can be in a room."
+            : "This room link isn't valid.",
+        );
         session.close();
         sessionRef.current = null;
+        setJoined(false);
         return;
       }
       setJoined(true);
-    } catch (e) {
-      setError(`Could not reach the signaling server: ${e instanceof Error ? e.message : e}`);
+    } catch {
+      setError("Can't reach the Daglei TV server. Check your connection and try again.");
       session.close();
       sessionRef.current = null;
+    } finally {
+      setJoining(false);
     }
   }, [roomId, forceRelay]);
 
@@ -113,18 +165,15 @@ export function Room({ roomId }: { roomId: string }) {
       session.startSharing(stream);
       setSharing(true);
     } catch (e) {
-      // NotAllowedError = user cancelled the picker.
-      setError(e instanceof Error ? `${e.name}: ${e.message}` : String(e));
+      // NotAllowedError = the user closed the picker without choosing.
+      if (e instanceof Error && e.name === "NotAllowedError") return;
+      setError(`Couldn't start sharing: ${e instanceof Error ? e.message : String(e)}`);
     }
   }, []);
 
   const stopShare = useCallback(() => {
     sessionRef.current?.stopSharing();
     setSharing(false);
-  }, []);
-
-  const fullscreen = useCallback(() => {
-    void stageRef.current?.requestFullscreen();
   }, []);
 
   const netText = [
@@ -142,75 +191,56 @@ export function Room({ roomId }: { roomId: string }) {
 
   if (!joined) {
     return (
-      <main style={{ padding: 24 }}>
-        <h1>Room {roomId}</h1>
-        <label style={{ display: "block", margin: "12px 0" }}>
-          <input
-            type="checkbox"
-            data-testid="force-relay"
-            checked={forceRelay}
-            onChange={(e) => setForceRelay(e.target.checked)}
-          />{" "}
-          Force TURN relay (debug)
-        </label>
-        <button data-testid="join" onClick={join}>Join room</button>
-        {error && <p style={{ color: "#f66" }}>{error}</p>}
-      </main>
+      <>
+        <EnterRoom
+          roomId={roomId}
+          forceRelay={forceRelay}
+          onForceRelayChange={setForceRelay}
+          onJoin={join}
+          onCopyLink={copyLink}
+          joining={joining}
+          error={error}
+        />
+        {toast && <div className={styles.toast} role="status">{toast}</div>}
+      </>
     );
   }
 
   return (
-    <main style={{ padding: 24, display: "grid", gap: 12 }}>
-      <header style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <strong>Room {roomId}</strong>
-        <span data-testid="phase">{phase}</span>
-        <button onClick={() => navigator.clipboard.writeText(window.location.href.split("?")[0]!)}>
-          Copy link
-        </button>
-        {sharing ? (
-          <button data-testid="stop-share" onClick={stopShare}>Stop sharing</button>
-        ) : (
-          <button data-testid="share" onClick={share} disabled={remoteSharing}>
-            Share my screen
+    <main className={styles.room}>
+      <TopBar
+        roomId={roomId}
+        phase={phase}
+        remoteSharing={remoteSharing}
+        onCopyLink={copyLink}
+        onToggleStats={() => setStatsOpen((o) => !o)}
+      />
+      {error && (
+        <div className={styles.banner} role="alert">
+          <p>{error}</p>
+          <button className="btn btn-ghost btn-icon" aria-label="Dismiss" onClick={() => setError(null)}>
+            <CloseIcon />
           </button>
-        )}
-        <button onClick={fullscreen}>Fullscreen</button>
-        <span data-testid="remote-sharing">{remoteSharing ? "partner is sharing" : ""}</span>
-      </header>
-      {error && <p style={{ color: "#f66" }}>{error}</p>}
-      <div ref={stageRef} style={{ background: "#000", aspectRatio: "16 / 9", position: "relative" }}>
-        <video
-          ref={videoRef}
-          data-testid="remote-video"
-          autoPlay
-          playsInline
-          style={{ width: "100%", height: "100%", objectFit: "contain" }}
-        />
-        {needsPlayClick && (
-          <button
-            style={{ position: "absolute", inset: "auto", top: "45%", left: "45%" }}
-            onClick={() => {
-              void videoRef.current?.play();
-              setNeedsPlayClick(false);
-            }}
-          >
-            Click to play
-          </button>
-        )}
-        {sharing && (
-          <div style={{ position: "absolute", top: 8, left: 8 }}>
-            You are sharing (no local preview, to avoid an infinity mirror)
-          </div>
-        )}
-      </div>
-      <details open>
-        <summary>Network (M2)</summary>
-        <pre data-testid="net">{netText}</pre>
-      </details>
-      <details>
-        <summary>Capture diagnostics (M1 spike)</summary>
-        <pre data-testid="diag">{JSON.stringify(diag, null, 2)}</pre>
-      </details>
+        </div>
+      )}
+      <Stage
+        videoRef={videoRef}
+        phase={phase}
+        sharing={sharing}
+        remoteSharing={remoteSharing}
+        needsPlayClick={needsPlayClick}
+        onPlayClick={() => {
+          void videoRef.current?.play();
+          setNeedsPlayClick(false);
+        }}
+        onPlaying={() => setNeedsPlayClick(false)}
+        onShare={share}
+        onStopShare={stopShare}
+        onCopyLink={copyLink}
+        onReconnect={join}
+      />
+      <StatsDrawer open={statsOpen} onClose={() => setStatsOpen(false)} netText={netText} diag={diag} />
+      {toast && <div className={styles.toast} role="status">{toast}</div>}
     </main>
   );
 }
