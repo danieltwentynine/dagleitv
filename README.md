@@ -2,37 +2,3 @@
 
 Private, two-person watch-together app: share your entire screen plus system audio
 over plain peer-to-peer WebRTC (Windows, Chrome/Edge). No accounts, no database.
-
-## Layout
-
-| Path | What |
-|---|---|
-| `apps/web` | Next.js (App Router, TS) frontend. Deploy: Vercel. |
-| `apps/signaling` | Node + Socket.IO relay for offer/answer/ICE; max 2 peers per room. Needs a long-lived WebSocket host (not Vercel). |
-| `packages/protocol` | Shared wire types and constants. |
-| `packages/rtc-core` | Framework-agnostic WebRTC core (no React/Next imports) so it can move to Electron unchanged. |
-
-## Develop
-
-```sh
-pnpm install
-cp apps/signaling/.env.example apps/signaling/.env   # optional, defaults work locally
-cp apps/web/.env.example apps/web/.env.local
-pnpm dev:signaling   # :4000, GET /health
-pnpm dev:web         # :3000
-pnpm typecheck
-```
-
-Requires Node 22+ and pnpm 10.
-
-## Status
-
-- M1 (bare P2P screen share + audio): implemented. `pnpm e2e` runs a two-page
-  smoke test with a synthetic source (needs `CHROMIUM_PATH`). Real-machine
-  checks are in `docs/m1-spike.md`.
-- M2 (TURN + forced-relay toggle + candidate-pair readout): implemented. Forced relay
-  through Cloudflare TURN verified on one PC; runs on two real networks still pending. `pnpm e2e:ice` checks the `/ice` endpoint. Test procedure: `docs/m2-network-test.md`.
-- M5 (polish), UI part: "cozy cinema" redesign of the home and room pages
-  (status pill, empty states, volume, fullscreen with auto-hiding controls,
-  stats drawer, reconnect). Shortcuts in a room: `F` fullscreen, `M` mute.
-- M3 and M4 (quality tuning, voice chat): not implemented.
