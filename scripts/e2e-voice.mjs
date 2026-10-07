@@ -15,6 +15,7 @@ const room = "voicechk" + Math.random().toString(36).slice(2, 8);
 const open = async (q) => {
   const p = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
   p.on("pageerror", (e) => console.log("pageerror:", e.message));
+  p.on("dialog", (d) => void d.accept()); // "Leave site?" on reload while the mic is on
   p.on("console", (m) => { if (m.type() === "error" && !/favicon|404/.test(m.text())) console.log("console.error:", m.text()); });
   await p.goto(`${WEB}/room/${room}${q}`);
   await p.getByTestId("join").click();

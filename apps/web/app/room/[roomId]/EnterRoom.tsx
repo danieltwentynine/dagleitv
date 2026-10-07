@@ -1,4 +1,5 @@
 import { LinkIcon, TvIcon } from "../../icons";
+import { ThemeToggle } from "../../ThemeToggle";
 import styles from "./room.module.css";
 
 interface EnterRoomProps {
@@ -15,6 +16,7 @@ interface EnterRoomProps {
 export function EnterRoom({ roomId, forceRelay, onForceRelayChange, onJoin, onCopyLink, joining, error }: EnterRoomProps) {
   return (
     <main className={styles.enterMain}>
+      <ThemeToggle className="corner" />
       <div className={`card ${styles.enterCard}`}>
         <span className="brand">
           <span className="brand-mark">

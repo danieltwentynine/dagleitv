@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ROOM_ID_PATTERN } from "@dagleitv/protocol";
 import { ArrowRightIcon, TvIcon } from "./icons";
+import { ThemeToggle } from "./ThemeToggle";
 import styles from "./page.module.css";
 
 function randomRoomCode(length = 10): string {
@@ -37,6 +38,7 @@ export default function Home() {
 
   return (
     <main className={styles.main}>
+      <ThemeToggle className="corner" />
       <div className={`card ${styles.card}`}>
         <div className={styles.hero}>
           <div className={styles.logo}>

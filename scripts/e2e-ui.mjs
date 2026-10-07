@@ -15,6 +15,7 @@ const shot = (p, n) => (SHOTS ? p.screenshot({ path: `${SHOTS}/${n}.png` }) : un
 const open = async (url, viewport = { width: 1280, height: 800 }) => {
   const p = await (await browser.newContext({ viewport })).newPage();
   p.on("pageerror", (e) => console.log("pageerror:", e.message));
+  p.on("dialog", (d) => void d.accept());
   await p.goto(url);
   return p;
 };
@@ -25,9 +26,25 @@ const playing = (viewer) =>
   }, null, { timeout: 15000 });
 
 try {
+  const icon = await fetch(`${WEB}/icon.svg`);
+  assert(icon.ok && (icon.headers.get("content-type") ?? "").includes("svg"), "favicon served at /icon.svg");
+
   const home = await open(WEB);
   await home.getByText("Start a room").waitFor();
   await shot(home, "1-home");
+  const theme = () => home.evaluate(() => ({
+    attr: document.documentElement.dataset.theme ?? null,
+    bg: getComputedStyle(document.body).backgroundColor,
+  }));
+  const before = await theme();
+  await home.getByTestId("theme-toggle").click();
+  const after = await theme();
+  assert(after.attr && after.bg !== before.bg, `theme toggle switches to ${after.attr}`);
+  await shot(home, "1b-home-toggled");
+  await home.reload();
+  assert((await theme()).attr === after.attr, "theme choice survives a reload (no flash: set before paint)");
+  await home.getByTestId("theme-toggle").click();
+  await home.evaluate(() => localStorage.removeItem("dagleitv.theme"));
   await home.getByLabel("Room link or code").fill("nope");
   await home.getByLabel("Join room").click();
   await home.getByText("doesn't look like").waitFor();
@@ -50,6 +67,8 @@ try {
   assert(true, "both peers connected (B forced relay)");
   await a.getByText("You're connected").waitFor();
   await shot(a, "4-connected");
+  assert((await a.title()).startsWith("Connected"), "tab title shows Connected");
+  assert(await a.locator("header a").count() === 0, "room logo is not a link");
 
   const c = await open(`${WEB}/room/${room}`);
   await c.getByTestId("join").click();
@@ -61,6 +80,7 @@ try {
   await b.getByTestId("remote-sharing").filter({ hasText: "partner is sharing" }).waitFor({ timeout: 10000 });
   await playing(b);
   assert(true, "A shares -> B plays it");
+  assert((await b.title()).startsWith("▶ Watching") && (await a.title()).startsWith("● Sharing"), "tab titles show Watching / Sharing");
   assert(await b.getByText("Click to play").count() === 0, "no stray Click to play while video plays");
   assert(await b.getByTestId("share").isDisabled(), "B's share button disabled while A shares");
   await shot(b, "5-watching");
@@ -89,12 +109,43 @@ try {
   await playing(a);
   assert(true, "B shares -> A plays it");
 
-  await b.close();
+  // B is sharing: Leave asks first. Stay keeps the room; Leave goes home.
+  await b.getByTestId("leave").click();
+  await b.getByTestId("leave-dialog").waitFor();
+  await shot(b, "10-leave-dialog");
+  await b.getByRole("button", { name: "Stay" }).click();
+  await b.getByTestId("leave-dialog").waitFor({ state: "hidden" });
+  assert(await b.getByTestId("stop-share").isVisible(), "Stay keeps B in the room, still sharing");
+  await b.getByTestId("leave").click();
+  await b.getByTestId("confirm-leave").click();
+  await b.waitForURL(`${WEB}/`);
+  assert(true, "Leave (confirmed) takes B to the home page");
   await a.getByText("Waiting for your partner").waitFor({ timeout: 10000 });
   assert(true, "A returns to waiting when B leaves");
+  assert((await a.title()).startsWith("Waiting for partner"), "A's tab title shows Waiting for partner");
+
+  // Nothing live: Leave goes straight home without asking.
+  await a.getByTestId("leave").click();
+  await a.waitForURL(`${WEB}/`);
+  assert(true, "Leave with nothing live goes home without a dialog");
 
   const m = await open(WEB, { width: 390, height: 844 });
   await shot(m, "9-mobile-home");
+
+  // Light theme screenshots of the room.
+  const la = await open(`${WEB}/room/${room}l?fake=1`);
+  await la.evaluate(() => localStorage.setItem("dagleitv.theme", "light"));
+  await la.reload();
+  await shot(la, "11-light-enter");
+  await la.getByTestId("join").click();
+  const lb = await open(`${WEB}/room/${room}l?fake=1`);
+  await lb.getByTestId("join").click();
+  await la.getByTestId("phase").filter({ hasText: "connected" }).waitFor({ timeout: 20000 });
+  await shot(la, "12-light-connected");
+  await lb.getByTestId("share").click();
+  await playing(la);
+  await la.waitForTimeout(1000);
+  await shot(la, "13-light-watching");
   console.log("UI E2E PASSED");
 } catch (e) {
   console.error("UI E2E FAILED:", e.message);

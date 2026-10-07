@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   PeerSession,
   SocketSignaling,
@@ -16,6 +17,7 @@ import {
 } from "@dagleitv/rtc-core";
 import { CloseIcon } from "../../icons";
 import { EnterRoom } from "./EnterRoom";
+import { LeaveDialog } from "./LeaveDialog";
 import { TopBar } from "./TopBar";
 import { Stage } from "./Stage";
 import { StatsDrawer } from "./StatsDrawer";
@@ -24,12 +26,23 @@ import styles from "./room.module.css";
 
 const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL ?? "http://localhost:4000";
 
+function tabTitle(phase: ConnectionPhase, joined: boolean, sharing: boolean, remoteSharing: boolean): string {
+  if (!joined) return "Join room";
+  if (phase === "disconnected" || phase === "failed") return "Connection lost";
+  if (remoteSharing) return "▶ Watching";
+  if (sharing) return "● Sharing";
+  if (phase === "connected") return "Connected";
+  if (phase === "negotiating") return "Connecting…";
+  return "Waiting for partner";
+}
+
 /**
  * The session is created from a click, not an effect: that gives the user
  * gesture needed for autoplay-with-sound and avoids React Strict Mode
  * double-mount creating two sockets. The effect only cleans up on unmount.
  */
 export function Room({ roomId }: { roomId: string }) {
+  const router = useRouter();
   const sessionRef = useRef<PeerSession | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -47,6 +60,7 @@ export function Room({ roomId }: { roomId: string }) {
   const [net, setNet] = useState<{ snap: ConnectionSnapshot; rate: Throughput | null } | null>(null);
   const [statsOpen, setStatsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
   useEffect(() => {
     setForceRelay(new URLSearchParams(window.location.search).has("relay"));
@@ -88,6 +102,32 @@ export function Room({ roomId }: { roomId: string }) {
   const showTip = useCallback((message: string) => showToast(message, 6000), [showToast]);
   const voice = useVoice(sessionRef, { onError: setError, onTip: showTip });
   const { reset: resetVoice, sessionEvents: voiceEvents } = voice;
+  const live = sharing || voice.micState !== "off";
+
+  useEffect(() => {
+    document.title = `${tabTitle(phase, joined, sharing, remoteSharing)} · Daglei TV`;
+  }, [phase, joined, sharing, remoteSharing]);
+  useEffect(() => () => void (document.title = "Daglei TV"), []);
+
+  // Closing or reloading the tab mid-share: the browser's own "Leave site?" prompt.
+  useEffect(() => {
+    if (!live) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [live]);
+
+  const leave = useCallback(() => {
+    setLeaveOpen(false);
+    sessionRef.current?.close();
+    sessionRef.current = null;
+    router.push("/");
+  }, [router]);
+
+  const requestLeave = useCallback(() => {
+    if (live) setLeaveOpen(true);
+    else leave();
+  }, [live, leave]);
 
   const copyLink = useCallback(async () => {
     const link = window.location.origin + window.location.pathname;
@@ -228,6 +268,7 @@ export function Room({ roomId }: { roomId: string }) {
         remoteSpeaking={voice.remoteSpeaking}
         onCopyLink={copyLink}
         onToggleStats={() => setStatsOpen((o) => !o)}
+        onLeave={requestLeave}
       />
       {error && (
         <div className={styles.banner} role="alert">
@@ -255,6 +296,13 @@ export function Room({ roomId }: { roomId: string }) {
         onToggleMic={voice.toggleMic}
         onCopyLink={copyLink}
         onReconnect={join}
+      />
+      <LeaveDialog
+        open={leaveOpen}
+        sharing={sharing}
+        micOn={voice.micState !== "off"}
+        onStay={() => setLeaveOpen(false)}
+        onLeave={leave}
       />
       <StatsDrawer open={statsOpen} onClose={() => setStatsOpen(false)} netText={netText} diag={diag} />
       {toast && <div className={styles.toast} role="status">{toast}</div>}

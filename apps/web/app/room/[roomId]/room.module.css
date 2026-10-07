@@ -32,7 +32,7 @@
 
 .code {
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .enterActions {
@@ -85,11 +85,6 @@
   gap: 12px;
 }
 
-.brandLink {
-  color: inherit;
-  text-decoration: none;
-}
-
 .roomCode {
   color: var(--text-faint);
   font-size: 13px;
@@ -131,7 +126,7 @@
 
 .pill[data-tone="danger"] {
   color: var(--danger);
-  border-color: rgb(248 113 113 / 0.3);
+  border-color: rgb(var(--danger-rgb) / 0.3);
 }
 
 .pill[data-tone="danger"] .dot {
@@ -139,7 +134,7 @@
 }
 
 .partnerSharing:not(:empty) {
-  color: var(--accent);
+  color: var(--accent-ink);
   font-size: 13px;
   font-weight: 500;
 }
@@ -155,7 +150,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 10px 10px 16px;
-  border: 1px solid rgb(248 113 113 / 0.3);
+  border: 1px solid rgb(var(--danger-rgb) / 0.3);
   border-radius: var(--radius);
   background: var(--danger-soft);
   color: var(--danger);
@@ -188,7 +183,7 @@
 }
 
 .screen[data-live="true"] {
-  border-color: rgb(245 165 36 / 0.25);
+  border-color: rgb(var(--accent-rgb) / 0.25);
   box-shadow: var(--glow);
 }
 
@@ -214,7 +209,7 @@
   gap: 10px;
   padding: 24px;
   text-align: center;
-  background: radial-gradient(closest-side, rgb(245 165 36 / 0.06), transparent);
+  background: radial-gradient(closest-side, rgb(var(--accent-rgb) / 0.06), transparent);
 }
 
 .overlayIcon {
@@ -234,13 +229,14 @@
 }
 
 .overlay h2 {
+  color: var(--screen-text);
   font-size: 20px;
   font-weight: 600;
 }
 
 .overlay p {
   max-width: 360px;
-  color: var(--text-muted);
+  color: var(--screen-muted);
 }
 
 .overlay .btn {
@@ -263,7 +259,7 @@
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  background: rgb(23 19 16 / 0.85);
+  background: var(--bar-bg);
   backdrop-filter: blur(12px);
   transition: opacity 300ms var(--ease), translate 300ms var(--ease);
 }
@@ -291,19 +287,19 @@
 
 .micButton[data-state="live"] {
   background: var(--accent-soft);
-  border-color: rgb(245 165 36 / 0.5);
-  color: var(--accent);
+  border-color: rgb(var(--accent-rgb) / 0.5);
+  color: var(--accent-ink);
 }
 
 .micButton[data-state="muted"] {
   background: var(--danger-soft);
-  border-color: rgb(248 113 113 / 0.4);
+  border-color: rgb(var(--danger-rgb) / 0.4);
   color: var(--danger);
 }
 
 .micButton[data-speaking="true"],
 .partnerMic[data-speaking="true"] {
-  box-shadow: 0 0 0 3px rgb(245 165 36 / 0.35), 0 0 16px rgb(245 165 36 / 0.45);
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.35), 0 0 16px rgb(var(--accent-rgb) / 0.45);
 }
 
 .partnerMic {
@@ -320,8 +316,8 @@
 }
 
 .partnerMic[data-state="live"] {
-  color: var(--accent);
-  border-color: rgb(245 165 36 / 0.35);
+  color: var(--accent-ink);
+  border-color: rgb(var(--accent-rgb) / 0.35);
 }
 
 .partnerMic[data-state="muted"] {
@@ -426,6 +422,42 @@
   font-size: 12px;
   line-height: 1.6;
   user-select: text;
+}
+
+/* ---- toast ------------------------------------------------------------ */
+
+/* ---- leave dialog ----------------------------------------------------- */
+
+.dialog {
+  width: min(400px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-raised);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.dialog h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dialog p {
+  margin-top: 8px;
+  color: var(--text-muted);
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
 }
 
 /* ---- toast ------------------------------------------------------------ */
