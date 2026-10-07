@@ -30,6 +30,6 @@ Requires Node 22+ and pnpm 10.
 - M1 (bare P2P screen share + audio): implemented. `pnpm e2e` runs a two-page
   smoke test with a synthetic source (needs `CHROMIUM_PATH`). Real-machine
   checks are in `docs/m1-spike.md`.
-- M2 (TURN + forced-relay toggle + candidate-pair readout): implemented, untested on real
-  networks. `pnpm e2e:ice` checks the `/ice` endpoint. Test procedure: `docs/m2-network-test.md`.
+- M2 (TURN + forced-relay toggle + candidate-pair readout): implemented. Forced relay
+  through Cloudflare TURN verified on one PC; runs on two real networks still pending. `pnpm e2e:ice` checks the `/ice` endpoint. Test procedure: `docs/m2-network-test.md`.
 - M3 to M5 (quality tuning, voice chat, polish): not implemented.
