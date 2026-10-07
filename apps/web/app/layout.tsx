@@ -1,13 +1,15 @@
 import type { ReactNode } from "react";
+import { DM_Sans } from "next/font/google";
+import "./globals.css";
+
+const sans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata = { title: "Daglei TV", description: "Private watch-together screen sharing" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", background: "#0b0b0f", color: "#eee" }}>
-        {children}
-      </body>
+    <html lang="en" className={sans.variable}>
+      <body>{children}</body>
     </html>
   );
 }
