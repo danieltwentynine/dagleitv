@@ -1,5 +1,6 @@
 import type { JoinResult, SignalMessage } from "@dagleitv/protocol";
 import { TRANSCEIVER_ORDER } from "./layout";
+import { FALLBACK_ICE_SERVERS } from "./ice";
 import type { SignalingChannel } from "./signaling";
 
 export type ConnectionPhase =
@@ -23,7 +24,14 @@ export interface SessionEvents {
 
 export interface PeerSessionOptions {
   signaling: SignalingChannel;
-  iceServers?: RTCIceServer[];
+  /**
+   * ICE servers, or an async resolver. The resolver runs once after joining the
+   * room (TURN credentials are only issued to people in a live room) and is
+   * awaited before any peer connection is created.
+   */
+  iceServers?: RTCIceServer[] | (() => Promise<RTCIceServer[]>);
+  /** "relay" forces all media through TURN. Debug toggle for testing M2. */
+  iceTransportPolicy?: RTCIceTransportPolicy;
   events?: SessionEvents;
 }
 
@@ -41,7 +49,10 @@ type ControlMessage = { type: "share-state"; sharing: boolean };
  */
 export class PeerSession {
   private readonly signaling: SignalingChannel;
-  private readonly iceServers: RTCIceServer[];
+  private iceServers: RTCIceServer[];
+  private readonly iceTransportPolicy: RTCIceTransportPolicy;
+  /** Resolves once ICE servers are known; negotiation waits on it. */
+  private iceReady: Promise<void> = Promise.resolve();
   private readonly events: SessionEvents;
 
   private pc: RTCPeerConnection | null = null;
@@ -51,12 +62,16 @@ export class PeerSession {
   /** Shared msid holder so screen video+audio land in one sync group. */
   private screenMsid = new MediaStream();
   private localShare: MediaStream | null = null;
+  private readonly resolveIce: (() => Promise<RTCIceServer[]>) | null;
   private closed = false;
   private phase: ConnectionPhase = "idle";
 
   constructor(options: PeerSessionOptions) {
     this.signaling = options.signaling;
-    this.iceServers = options.iceServers ?? [{ urls: "stun:stun.l.google.com:19302" }];
+    const ice = options.iceServers;
+    this.iceServers = typeof ice === "function" ? [] : (ice ?? FALLBACK_ICE_SERVERS);
+    this.iceTransportPolicy = options.iceTransportPolicy ?? "all";
+    this.resolveIce = typeof ice === "function" ? ice : null;
     this.events = options.events ?? {};
   }
 
@@ -72,7 +87,19 @@ export class PeerSession {
         if (!this.closed) this.setPhase("disconnected");
       },
     });
+    // Signals can arrive as soon as we join, so the gate must exist before that.
+    let release!: () => void;
+    this.iceReady = new Promise<void>((r) => (release = r));
     const result = await this.signaling.join(roomId);
+    if (result.ok && this.resolveIce) {
+      try {
+        this.iceServers = await this.resolveIce();
+      } catch (e) {
+        this.iceServers = FALLBACK_ICE_SERVERS;
+        this.events.onError?.(e instanceof Error ? e : new Error(String(e)));
+      }
+    }
+    release();
     if (result.ok && this.phase === "idle") {
       this.setPhase(result.peerPresent ? "negotiating" : "waiting-for-peer");
     }
@@ -122,6 +149,8 @@ export class PeerSession {
   // ---- negotiation -------------------------------------------------------
 
   private async makeOffer(): Promise<void> {
+    await this.iceReady;
+    if (this.closed) return;
     const pc = this.createPeer();
     pc.addTransceiver("video", { direction: "sendrecv", streams: [this.screenMsid] });
     pc.addTransceiver("audio", { direction: "sendrecv", streams: [this.screenMsid] });
@@ -134,6 +163,7 @@ export class PeerSession {
   }
 
   private async handleSignal(msg: SignalMessage): Promise<void> {
+    await this.iceReady;
     if (this.closed) return;
     if (msg.kind === "offer") {
       const pc = this.createPeer();
@@ -168,7 +198,10 @@ export class PeerSession {
 
   private createPeer(): RTCPeerConnection {
     this.teardownPeer();
-    const pc = new RTCPeerConnection({ iceServers: this.iceServers });
+    const pc = new RTCPeerConnection({
+      iceServers: this.iceServers,
+      iceTransportPolicy: this.iceTransportPolicy,
+    });
     this.pc = pc;
     pc.onicecandidate = (e) => {
       if (e.candidate) this.signaling.send({ kind: "ice-candidate", candidate: e.candidate.toJSON() });

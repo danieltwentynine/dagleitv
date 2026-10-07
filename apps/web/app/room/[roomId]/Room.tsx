@@ -7,7 +7,12 @@ import {
   captureDisplay,
   captureFake,
   describeCapture,
+  fetchIceServers,
+  getConnectionSnapshot,
+  throughputBetween,
   type ConnectionPhase,
+  type ConnectionSnapshot,
+  type Throughput,
 } from "@dagleitv/rtc-core";
 
 const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL ?? "http://localhost:4000";
@@ -29,6 +34,32 @@ export function Room({ roomId }: { roomId: string }) {
   const [sharing, setSharing] = useState(false);
   const [needsPlayClick, setNeedsPlayClick] = useState(false);
   const [diag, setDiag] = useState<unknown>(null);
+  const [forceRelay, setForceRelay] = useState(false);
+  const [turnAvailable, setTurnAvailable] = useState<boolean | null>(null);
+  const [net, setNet] = useState<{ snap: ConnectionSnapshot; rate: Throughput | null } | null>(null);
+
+  useEffect(() => {
+    setForceRelay(new URLSearchParams(window.location.search).has("relay"));
+  }, []);
+
+  // M2: poll the selected candidate pair once a second while connected.
+  useEffect(() => {
+    if (phase !== "connected") {
+      setNet(null);
+      return;
+    }
+    let prev: ConnectionSnapshot | null = null;
+    const tick = async () => {
+      const pc = sessionRef.current?.peerConnection;
+      const snap = pc ? await getConnectionSnapshot(pc) : null;
+      if (!snap) return;
+      setNet({ snap, rate: prev ? throughputBetween(prev, snap) : null });
+      prev = snap;
+    };
+    void tick();
+    const id = setInterval(() => void tick(), 1000);
+    return () => clearInterval(id);
+  }, [phase]);
 
   useEffect(() => () => sessionRef.current?.close(), []);
 
@@ -36,6 +67,12 @@ export function Room({ roomId }: { roomId: string }) {
     setError(null);
     const session = new PeerSession({
       signaling: new SocketSignaling(SIGNALING_URL),
+      iceTransportPolicy: forceRelay ? "relay" : "all",
+      iceServers: async () => {
+        const ice = await fetchIceServers(SIGNALING_URL, roomId);
+        setTurnAvailable(ice.turn);
+        return ice.iceServers;
+      },
       events: {
         onPhase: setPhase,
         onRemoteSharing: setRemoteSharing,
@@ -64,7 +101,7 @@ export function Room({ roomId }: { roomId: string }) {
       session.close();
       sessionRef.current = null;
     }
-  }, [roomId]);
+  }, [roomId, forceRelay]);
 
   const share = useCallback(async () => {
     const session = sessionRef.current;
@@ -90,10 +127,32 @@ export function Room({ roomId }: { roomId: string }) {
     void stageRef.current?.requestFullscreen();
   }, []);
 
+  const netText = [
+    `TURN credentials: ${turnAvailable === null ? "n/a" : turnAvailable ? "yes" : "no (STUN only)"}`,
+    `policy: ${forceRelay ? "relay only" : "all"}`,
+    ...(net
+      ? [
+          `pair: ${net.snap.pair} ${net.snap.relayed ? "(RELAYED)" : "(direct)"} ${net.snap.protocol ?? ""}`,
+          `rtt: ${net.snap.rttMs?.toFixed(0) ?? "?"} ms`,
+          `send: ${net.rate?.sendKbps.toFixed(0) ?? "?"} kbps, recv: ${net.rate?.recvKbps.toFixed(0) ?? "?"} kbps`,
+          `est. available outgoing: ${net.snap.availableOutgoingKbps?.toFixed(0) ?? "?"} kbps`,
+        ]
+      : ["pair: (not connected)"]),
+  ].join("\n");
+
   if (!joined) {
     return (
       <main style={{ padding: 24 }}>
         <h1>Room {roomId}</h1>
+        <label style={{ display: "block", margin: "12px 0" }}>
+          <input
+            type="checkbox"
+            data-testid="force-relay"
+            checked={forceRelay}
+            onChange={(e) => setForceRelay(e.target.checked)}
+          />{" "}
+          Force TURN relay (debug)
+        </label>
         <button data-testid="join" onClick={join}>Join room</button>
         {error && <p style={{ color: "#f66" }}>{error}</p>}
       </main>
@@ -144,6 +203,10 @@ export function Room({ roomId }: { roomId: string }) {
           </div>
         )}
       </div>
+      <details open>
+        <summary>Network (M2)</summary>
+        <pre data-testid="net">{netText}</pre>
+      </details>
       <details>
         <summary>Capture diagnostics (M1 spike)</summary>
         <pre data-testid="diag">{JSON.stringify(diag, null, 2)}</pre>
