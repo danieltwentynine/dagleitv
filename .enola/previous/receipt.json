@@ -3,12 +3,12 @@
   "format_version": 1,
   "enola_version": "0.4.21",
   "extractor_version": "v270",
-  "generated_at": "2026-10-07T13:54:39Z",
-  "duration": "93.8928ms",
+  "generated_at": "2026-10-07T13:53:28Z",
+  "duration": "190.4625ms",
   "repo_path": "C:\\Users\\picky\\Projects\\dagleitv",
   "git": {
     "ref": "m2-turn-and-quality",
-    "commit": "80de7bb8b7b5644215497197b4a1ba8ba89819ca",
+    "commit": "50ebd3da8126b6b506f47bf010721a7ec964c285",
     "dirty": false,
     "remote": "github.com/danieltwentynine/dagleitv"
   },
@@ -49,7 +49,7 @@
   "output_hashes": {
     "facts.jsonl": "sha256:2c60ceb7a4aff2f49bb28b8185c176e75686d1cd34e0b566bf8366f0861dca96",
     "insights.json": "sha256:5c140313b8348b1193ce46bf4fb1e839a58e3114ed7661263197a5ba448d31ed",
-    "llm_context.md": "sha256:64df95f45d81b369e47227af17a9724c6c40b809700b88ab50ea624b4ad9f1f8"
+    "llm_context.md": "sha256:db6ffb026e1027b7713cedfde300105dc9f9c5a7e1b861dfeb27d7994220e071"
   },
   "fact_count": 186,
   "insight_count": 10,

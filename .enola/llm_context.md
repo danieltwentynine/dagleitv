@@ -44,4 +44,4 @@ _No cross-module dependencies detected._
 
 ---
 
-*Generated at 2026-10-07T13:53:28Z in 190.4625ms. 186 facts, 10 insights.*
+*Generated at 2026-10-07T13:54:39Z in 93.8928ms. 186 facts, 10 insights.*

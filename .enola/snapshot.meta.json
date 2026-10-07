@@ -1,8 +1,8 @@
 {
   "repo_path": "C:\\Users\\picky\\Projects\\dagleitv",
   "repo_label": "dagleitv",
-  "generated_at": "2026-10-07T13:53:28Z",
-  "duration": "190.4625ms",
+  "generated_at": "2026-10-07T13:54:39Z",
+  "duration": "93.8928ms",
   "extractors": [
     "manifests",
     "mdintent",
@@ -37,13 +37,98 @@
   ],
   "file_hashes": [
     {
-      "path": "README.md",
-      "hash": "4963b7ff0934763b5b151f432a032133f013cbef842eb26270ff749838fd09ac",
+      "path": "packages/rtc-core/src/ice.ts",
+      "hash": "8b5a277095ddb68d1123e6e5f982323a65f83b672a5ae94bb20da93c869815fb",
+      "mod_time": "2026-10-05T04:01:50Z"
+    },
+    {
+      "path": "packages/rtc-core/src/index.ts",
+      "hash": "b03e9f4cd5b87dfdfa4bd2c9787db35dc7efd7127477f10c28875a4ed4ef97d8",
+      "mod_time": "2026-10-05T04:01:50Z"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "hash": "bfb9f35f4c294744a56077fdbee47d80430294a37cd562566796190b7e46d556",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/web/.env.example",
+      "hash": "882d8c3cda5dc91a78ceb7fa062a32469957ae6985a4e08fb6d8a1c9290c3506",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/web/package.json",
+      "hash": "d207124d324a41ecba95f00687b7d49f6c57fb2e0b6714af6b99f0485e8050c6",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "docs/m1-spike.md",
+      "hash": "5e9c90d06082bfc19d3c4c38437b74dc1d72e10b46d73b4f499787bbf892b636",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "packages/protocol/src/index.ts",
+      "hash": "e584b7f3be96b8fdc1e1b2aa3131042f02dcb6cd7658565ac5ac1ab1ce836cfb",
+      "mod_time": "2026-10-05T04:01:00Z"
+    },
+    {
+      "path": "packages/rtc-core/package.json",
+      "hash": "a16a787e75d7eaa2abc64d1e9559d377dbdee4c0395f8c1b83d823b53280954b",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "packages/rtc-core/src/layout.ts",
+      "hash": "6f087e4827b6cdb53406b1d4956f8af312c3e04aab84747bb1e2619899d88f35",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/signaling/.env.example",
+      "hash": "d7beb7a650511a36df099601d96e8539343527cecea75c7bbf9e7394125d4f5b",
+      "mod_time": "2026-10-05T04:01:31Z"
+    },
+    {
+      "path": "apps/signaling/tsconfig.json",
+      "hash": "c0fec966629aa97f1f13e8d3075b10c11bd7853612bdbd8803ea927d814900eb",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/web/CLAUDE.md",
+      "hash": "d631d88045f74623d568adfb4783b72e3d1b732330d749bc6c72e6648d4581d3",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/web/app/layout.tsx",
+      "hash": "cbc196a5096ec4280ed1a0de9f29347f819cb154f7175d40a6b7cce5284862e2",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "packages/rtc-core/src/capture.ts",
+      "hash": "dee0b31e7d49dee0c5fce9fa7f0d7f4f637848e4680fae1bf82158da36e319c0",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/web/AGENTS.md",
+      "hash": "ec1b6e023814ae1a510b02ea62229e5eb035d75e39e3335d5ea7f5ce5654d567",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/web/app/room/[roomId]/Room.tsx",
+      "hash": "6064c495004acbcf973af6d7a059070279793baa2ce8659b526214ca709f6823",
+      "mod_time": "2026-10-05T04:02:28Z"
+    },
+    {
+      "path": "docs/m2-network-test.md",
+      "hash": "5b6d82ce307cd54f3ad2769630587117e6c397b8d77d966b6c70d2e3788df729",
       "mod_time": "2026-10-05T04:03:00Z"
     },
     {
-      "path": "packages/protocol/package.json",
-      "hash": "a204880f388b2d2e5321d3885b92f109b8df8852da9d04d099061f328c7a725b",
+      "path": "pnpm-lock.yaml",
+      "hash": "91307b0c35f8770655f566f3174305e7f0cb47460d006ac8c3bfee754b26eff7",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "packages/protocol/tsconfig.json",
+      "hash": "2b6f206dd23d73eb7a3c915d359b0fe4769b3132b1024c038a16ac8d4468449b",
       "mod_time": "2026-10-05T03:59:01Z"
     },
     {
@@ -52,13 +137,43 @@
       "mod_time": "2026-10-05T03:59:01Z"
     },
     {
-      "path": "packages/rtc-core/tsconfig.json",
-      "hash": "b728f20d4140fb0cdac229fd7eac6dbbe1ed2cbe09c04ab8464ca2eb5e133f9c",
+      "path": "README.md",
+      "hash": "4963b7ff0934763b5b151f432a032133f013cbef842eb26270ff749838fd09ac",
+      "mod_time": "2026-10-05T04:03:00Z"
+    },
+    {
+      "path": "apps/signaling/package.json",
+      "hash": "3f211d522bdff679d6211187e8bd85cced218f3cba81c86d0cf7b69a715fc53f",
       "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/web/app/page.tsx",
+      "hash": "6671132d78b0cb1bb1e488884daf2b6c8cf511db083d6159504fff431eeed8a2",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/web/tsconfig.json",
+      "hash": "a7a13b5fce705a91177ea677afe65cb2ccbfae447cd7b465ee71cd5b12227aa6",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": "apps/web/tsconfig.tsbuildinfo",
+      "hash": "afe27334f858641addd87cf19751f93c3e525c163cf1b33ebd2c6bcd52192a6c",
+      "mod_time": "2026-10-05T04:02:34Z"
+    },
+    {
+      "path": "packages/rtc-core/src/session.ts",
+      "hash": "19a8c428334ebeedf9362c981dd2197a808cd2290a746afc1d22ce1cdaeb5085",
+      "mod_time": "2026-10-05T04:01:50Z"
     },
     {
       "path": "scripts/e2e-m1.mjs",
       "hash": "babc3a9637b70a3d621db0e80c44e918d9c5c31d5fa530eb4f8d3029b776b456",
+      "mod_time": "2026-10-05T03:59:01Z"
+    },
+    {
+      "path": ".gitignore",
+      "hash": "a4d9e9d4caf23fb5ed35853ddc3446b0e9739aec50f8fbd12939d1e3c765ac1d",
       "mod_time": "2026-10-05T03:59:01Z"
     },
     {
@@ -72,28 +187,8 @@
       "mod_time": "2026-10-05T04:01:18Z"
     },
     {
-      "path": "apps/signaling/tsconfig.json",
-      "hash": "c0fec966629aa97f1f13e8d3075b10c11bd7853612bdbd8803ea927d814900eb",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "apps/web/package.json",
-      "hash": "d207124d324a41ecba95f00687b7d49f6c57fb2e0b6714af6b99f0485e8050c6",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "packages/rtc-core/src/ice.ts",
-      "hash": "8b5a277095ddb68d1123e6e5f982323a65f83b672a5ae94bb20da93c869815fb",
-      "mod_time": "2026-10-05T04:01:50Z"
-    },
-    {
-      "path": "packages/rtc-core/src/index.ts",
-      "hash": "b03e9f4cd5b87dfdfa4bd2c9787db35dc7efd7127477f10c28875a4ed4ef97d8",
-      "mod_time": "2026-10-05T04:01:50Z"
-    },
-    {
-      "path": "packages/rtc-core/src/layout.ts",
-      "hash": "6f087e4827b6cdb53406b1d4956f8af312c3e04aab84747bb1e2619899d88f35",
+      "path": "apps/web/next-env.d.ts",
+      "hash": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
       "mod_time": "2026-10-05T03:59:01Z"
     },
     {
@@ -102,49 +197,29 @@
       "mod_time": "2026-10-05T04:03:00Z"
     },
     {
-      "path": "apps/web/app/layout.tsx",
-      "hash": "cbc196a5096ec4280ed1a0de9f29347f819cb154f7175d40a6b7cce5284862e2",
+      "path": "apps/signaling/src/server.ts",
+      "hash": "5336df2ae180f9c9798d174a18a54ab17c8a35033d4acf0252f27233dac18b95",
+      "mod_time": "2026-10-05T04:01:31Z"
+    },
+    {
+      "path": "apps/web/app/room/[roomId]/page.tsx",
+      "hash": "7ccd4739675551d0d3ec149fbd747c180bb60e1dd84e128794aa3b39309fd809",
       "mod_time": "2026-10-05T03:59:01Z"
     },
     {
-      "path": "apps/web/tsconfig.tsbuildinfo",
-      "hash": "afe27334f858641addd87cf19751f93c3e525c163cf1b33ebd2c6bcd52192a6c",
-      "mod_time": "2026-10-05T04:02:34Z"
+      "path": "packages/rtc-core/src/stats.ts",
+      "hash": "8cda6bf546f57ec3d4b936b8de0e5c1ec793b05d852f38148ea39a5e5d855492",
+      "mod_time": "2026-10-05T04:01:50Z"
     },
     {
-      "path": "docs/m2-network-test.md",
-      "hash": "5b6d82ce307cd54f3ad2769630587117e6c397b8d77d966b6c70d2e3788df729",
-      "mod_time": "2026-10-05T04:03:00Z"
-    },
-    {
-      "path": "pnpm-lock.yaml",
-      "hash": "91307b0c35f8770655f566f3174305e7f0cb47460d006ac8c3bfee754b26eff7",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "apps/web/.env.example",
-      "hash": "882d8c3cda5dc91a78ceb7fa062a32469957ae6985a4e08fb6d8a1c9290c3506",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "apps/web/tsconfig.json",
-      "hash": "a7a13b5fce705a91177ea677afe65cb2ccbfae447cd7b465ee71cd5b12227aa6",
+      "path": "packages/rtc-core/tsconfig.json",
+      "hash": "b728f20d4140fb0cdac229fd7eac6dbbe1ed2cbe09c04ab8464ca2eb5e133f9c",
       "mod_time": "2026-10-05T03:59:01Z"
     },
     {
       "path": "pnpm-workspace.yaml",
       "hash": "497fb79b584e1cb676861802b4826b02abe1875b981eb5ee329793d635b90706",
       "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "apps/signaling/src/server.ts",
-      "hash": "5336df2ae180f9c9798d174a18a54ab17c8a35033d4acf0252f27233dac18b95",
-      "mod_time": "2026-10-05T04:01:31Z"
-    },
-    {
-      "path": "apps/web/app/room/[roomId]/Room.tsx",
-      "hash": "6064c495004acbcf973af6d7a059070279793baa2ce8659b526214ca709f6823",
-      "mod_time": "2026-10-05T04:02:28Z"
     },
     {
       "path": "apps/web/next.config.ts",
@@ -157,83 +232,8 @@
       "mod_time": "2026-10-05T04:02:45Z"
     },
     {
-      "path": "packages/rtc-core/package.json",
-      "hash": "a16a787e75d7eaa2abc64d1e9559d377dbdee4c0395f8c1b83d823b53280954b",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "apps/web/CLAUDE.md",
-      "hash": "d631d88045f74623d568adfb4783b72e3d1b732330d749bc6c72e6648d4581d3",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "packages/protocol/tsconfig.json",
-      "hash": "2b6f206dd23d73eb7a3c915d359b0fe4769b3132b1024c038a16ac8d4468449b",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "packages/rtc-core/src/session.ts",
-      "hash": "19a8c428334ebeedf9362c981dd2197a808cd2290a746afc1d22ce1cdaeb5085",
-      "mod_time": "2026-10-05T04:01:50Z"
-    },
-    {
-      "path": "tsconfig.base.json",
-      "hash": "bfb9f35f4c294744a56077fdbee47d80430294a37cd562566796190b7e46d556",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": ".gitignore",
-      "hash": "a4d9e9d4caf23fb5ed35853ddc3446b0e9739aec50f8fbd12939d1e3c765ac1d",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "apps/signaling/.env.example",
-      "hash": "d7beb7a650511a36df099601d96e8539343527cecea75c7bbf9e7394125d4f5b",
-      "mod_time": "2026-10-05T04:01:31Z"
-    },
-    {
-      "path": "apps/signaling/package.json",
-      "hash": "3f211d522bdff679d6211187e8bd85cced218f3cba81c86d0cf7b69a715fc53f",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "apps/web/AGENTS.md",
-      "hash": "ec1b6e023814ae1a510b02ea62229e5eb035d75e39e3335d5ea7f5ce5654d567",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "apps/web/app/page.tsx",
-      "hash": "6671132d78b0cb1bb1e488884daf2b6c8cf511db083d6159504fff431eeed8a2",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "packages/protocol/src/index.ts",
-      "hash": "e584b7f3be96b8fdc1e1b2aa3131042f02dcb6cd7658565ac5ac1ab1ce836cfb",
-      "mod_time": "2026-10-05T04:01:00Z"
-    },
-    {
-      "path": "packages/rtc-core/src/stats.ts",
-      "hash": "8cda6bf546f57ec3d4b936b8de0e5c1ec793b05d852f38148ea39a5e5d855492",
-      "mod_time": "2026-10-05T04:01:50Z"
-    },
-    {
-      "path": "apps/web/app/room/[roomId]/page.tsx",
-      "hash": "7ccd4739675551d0d3ec149fbd747c180bb60e1dd84e128794aa3b39309fd809",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "apps/web/next-env.d.ts",
-      "hash": "b8b3a344484b959af5e4e3fc1a1609dac3cb9ece0cdeb6c145be29bc4c491000",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "docs/m1-spike.md",
-      "hash": "5e9c90d06082bfc19d3c4c38437b74dc1d72e10b46d73b4f499787bbf892b636",
-      "mod_time": "2026-10-05T03:59:01Z"
-    },
-    {
-      "path": "packages/rtc-core/src/capture.ts",
-      "hash": "dee0b31e7d49dee0c5fce9fa7f0d7f4f637848e4680fae1bf82158da36e319c0",
+      "path": "packages/protocol/package.json",
+      "hash": "a204880f388b2d2e5321d3885b92f109b8df8852da9d04d099061f328c7a725b",
       "mod_time": "2026-10-05T03:59:01Z"
     }
   ],
@@ -243,7 +243,7 @@
   "snapshot_id": "sha256:55874d1ce53ae9aeb4969be68cf9756a0fcd8b4a605a470c956841aaf2f4efad",
   "git": {
     "ref": "m2-turn-and-quality",
-    "commit": "50ebd3da8126b6b506f47bf010721a7ec964c285",
+    "commit": "80de7bb8b7b5644215497197b4a1ba8ba89819ca",
     "dirty": false,
     "remote": "github.com/danieltwentynine/dagleitv"
   },
@@ -293,7 +293,7 @@
   "output_hashes": {
     "facts.jsonl": "sha256:2c60ceb7a4aff2f49bb28b8185c176e75686d1cd34e0b566bf8366f0861dca96",
     "insights.json": "sha256:5c140313b8348b1193ce46bf4fb1e839a58e3114ed7661263197a5ba448d31ed",
-    "llm_context.md": "sha256:db6ffb026e1027b7713cedfde300105dc9f9c5a7e1b861dfeb27d7994220e071"
+    "llm_context.md": "sha256:64df95f45d81b369e47227af17a9724c6c40b809700b88ab50ea624b4ad9f1f8"
   },
   "unseen": {
     "files_excluded_by_ignore": 0,
