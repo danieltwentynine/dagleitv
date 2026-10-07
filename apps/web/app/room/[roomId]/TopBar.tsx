@@ -1,9 +1,15 @@
 import Link from "next/link";
-import type { ConnectionPhase } from "@dagleitv/rtc-core";
-import { LinkIcon, StatsIcon, TvIcon } from "../../icons";
+import type { ConnectionPhase, VoiceState } from "@dagleitv/rtc-core";
+import { LinkIcon, MicIcon, MicOffIcon, StatsIcon, TvIcon } from "../../icons";
 import styles from "./room.module.css";
 
 type Tone = "ok" | "warn" | "danger" | "neutral";
+
+const PARTNER_MIC_LABEL: Record<VoiceState, string> = {
+  off: "Partner's mic off",
+  muted: "Partner muted",
+  live: "Partner's mic on",
+};
 
 const PHASE_LABEL: Record<ConnectionPhase, { label: string; tone: Tone }> = {
   idle: { label: "Starting…", tone: "neutral" },
@@ -19,11 +25,14 @@ interface TopBarProps {
   roomId: string;
   phase: ConnectionPhase;
   remoteSharing: boolean;
+  remoteVoiceState: VoiceState;
+  remoteSpeaking: boolean;
   onCopyLink(): void;
   onToggleStats(): void;
 }
 
-export function TopBar({ roomId, phase, remoteSharing, onCopyLink, onToggleStats }: TopBarProps) {
+export function TopBar(props: TopBarProps) {
+  const { roomId, phase, remoteSharing, remoteVoiceState, remoteSpeaking, onCopyLink, onToggleStats } = props;
   const { label, tone } = PHASE_LABEL[phase];
   return (
     <header className={styles.topBar}>
@@ -38,6 +47,18 @@ export function TopBar({ roomId, phase, remoteSharing, onCopyLink, onToggleStats
         <span className={styles.dot} />
         {label}
       </span>
+      {phase === "connected" && (
+        <span
+          className={styles.partnerMic}
+          data-testid="partner-mic"
+          data-state={remoteVoiceState}
+          data-speaking={remoteSpeaking}
+          title={PARTNER_MIC_LABEL[remoteVoiceState]}
+        >
+          {remoteVoiceState === "live" ? <MicIcon size={14} /> : <MicOffIcon size={14} />}
+          <span className={styles.hideNarrow}>{PARTNER_MIC_LABEL[remoteVoiceState]}</span>
+        </span>
+      )}
       <span className={styles.partnerSharing} data-testid="remote-sharing">
         {remoteSharing ? "Partner is sharing" : ""}
       </span>

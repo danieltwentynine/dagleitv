@@ -8,3 +8,4 @@ export * from "./capture";
 export * from "./session";
 export * from "./ice";
 export * from "./stats";
+export * from "./audio-level";

@@ -19,6 +19,7 @@ import { EnterRoom } from "./EnterRoom";
 import { TopBar } from "./TopBar";
 import { Stage } from "./Stage";
 import { StatsDrawer } from "./StatsDrawer";
+import { useVoice } from "./useVoice";
 import styles from "./room.module.css";
 
 const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL ?? "http://localhost:4000";
@@ -78,11 +79,15 @@ export function Room({ roomId }: { roomId: string }) {
     [],
   );
 
-  const showToast = useCallback((message: string) => {
+  const showToast = useCallback((message: string, ms = 2200) => {
     setToast(message);
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2200);
+    toastTimer.current = setTimeout(() => setToast(null), ms);
   }, []);
+
+  const showTip = useCallback((message: string) => showToast(message, 6000), [showToast]);
+  const voice = useVoice(sessionRef, { onError: setError, onTip: showTip });
+  const { reset: resetVoice, sessionEvents: voiceEvents } = voice;
 
   const copyLink = useCallback(async () => {
     const link = window.location.origin + window.location.pathname;
@@ -103,6 +108,7 @@ export function Room({ roomId }: { roomId: string }) {
     setSharing(false);
     setRemoteSharing(false);
     setNeedsPlayClick(false);
+    resetVoice();
 
     const session = new PeerSession({
       signaling: new SocketSignaling(SIGNALING_URL),
@@ -113,6 +119,7 @@ export function Room({ roomId }: { roomId: string }) {
         return ice.iceServers;
       },
       events: {
+        ...voiceEvents,
         onPhase: (p) => {
           if (sessionRef.current === session) setPhase(p);
         },
@@ -153,7 +160,7 @@ export function Room({ roomId }: { roomId: string }) {
     } finally {
       setJoining(false);
     }
-  }, [roomId, forceRelay]);
+  }, [roomId, forceRelay, resetVoice, voiceEvents]);
 
   const share = useCallback(async () => {
     const session = sessionRef.current;
@@ -189,9 +196,13 @@ export function Room({ roomId }: { roomId: string }) {
       : ["pair: (not connected)"]),
   ].join("\n");
 
+  // Always mounted so the partner's voice can attach as soon as it arrives.
+  const voiceAudio = <audio ref={voice.audioRef} data-testid="remote-voice" autoPlay hidden />;
+
   if (!joined) {
     return (
       <>
+        {voiceAudio}
         <EnterRoom
           roomId={roomId}
           forceRelay={forceRelay}
@@ -208,10 +219,13 @@ export function Room({ roomId }: { roomId: string }) {
 
   return (
     <main className={styles.room}>
+      {voiceAudio}
       <TopBar
         roomId={roomId}
         phase={phase}
         remoteSharing={remoteSharing}
+        remoteVoiceState={voice.remoteVoiceState}
+        remoteSpeaking={voice.remoteSpeaking}
         onCopyLink={copyLink}
         onToggleStats={() => setStatsOpen((o) => !o)}
       />
@@ -236,6 +250,9 @@ export function Room({ roomId }: { roomId: string }) {
         onPlaying={() => setNeedsPlayClick(false)}
         onShare={share}
         onStopShare={stopShare}
+        micState={voice.micState}
+        localSpeaking={voice.localSpeaking}
+        onToggleMic={voice.toggleMic}
         onCopyLink={copyLink}
         onReconnect={join}
       />
