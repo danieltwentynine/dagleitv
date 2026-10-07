@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { ConnectionPhase, VoiceState } from "@dagleitv/rtc-core";
-import { LinkIcon, MicIcon, MicOffIcon, StatsIcon, TvIcon } from "../../icons";
+import { LeaveIcon, LinkIcon, MicIcon, MicOffIcon, StatsIcon, TvIcon } from "../../icons";
+import { ThemeToggle } from "../../ThemeToggle";
 import styles from "./room.module.css";
 
 type Tone = "ok" | "warn" | "danger" | "neutral";
@@ -29,19 +29,21 @@ interface TopBarProps {
   remoteSpeaking: boolean;
   onCopyLink(): void;
   onToggleStats(): void;
+  onLeave(): void;
 }
 
 export function TopBar(props: TopBarProps) {
-  const { roomId, phase, remoteSharing, remoteVoiceState, remoteSpeaking, onCopyLink, onToggleStats } = props;
+  const { roomId, phase, remoteSharing, remoteVoiceState, remoteSpeaking, onCopyLink, onToggleStats, onLeave } = props;
   const { label, tone } = PHASE_LABEL[phase];
   return (
     <header className={styles.topBar}>
-      <Link href="/" className={`brand ${styles.brandLink}`}>
+      {/* Not a link: leaving the room goes through the Leave button. */}
+      <span className="brand">
         <span className="brand-mark">
           <TvIcon size={16} />
         </span>
         Daglei TV
-      </Link>
+      </span>
       <span className={styles.roomCode}>Room {roomId}</span>
       <span className={styles.pill} data-tone={tone} data-testid="phase">
         <span className={styles.dot} />
@@ -69,6 +71,11 @@ export function TopBar(props: TopBarProps) {
       </button>
       <button className="btn btn-ghost btn-icon" onClick={onToggleStats} aria-label="Connection stats" title="Connection stats">
         <StatsIcon />
+      </button>
+      <ThemeToggle />
+      <button className="btn btn-danger" onClick={onLeave} data-testid="leave">
+        <LeaveIcon size={16} />
+        <span className={styles.hideNarrow}>Leave</span>
       </button>
     </header>
   );

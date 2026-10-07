@@ -3,32 +3,129 @@
   --bg: #0d0b0a;
   --bg-raised: #171310;
   --bg-elevated: #211b17;
+  --bg-hover: #2a221d;
   --border: #2e2621;
   --border-strong: #43372f;
+  --border-hover: #5a4a3f;
   --text: #f3ece6;
   --text-muted: #a89a8e;
   --text-faint: #6f6259;
 
-  --accent: #f5a524;
+  --accent-rgb: 245 165 36;
+  --accent: rgb(var(--accent-rgb));
   --accent-hover: #ffb84a;
   --accent-text: #1a1206;
-  --accent-soft: rgb(245 165 36 / 0.14);
-  --glow: 0 0 80px rgb(245 165 36 / 0.16), 0 0 24px rgb(245 165 36 / 0.08);
+  /* Accent used as text/icon colour on the page background. */
+  --accent-ink: var(--accent);
+  --accent-soft: rgb(var(--accent-rgb) / 0.14);
+  --glow: 0 0 80px rgb(var(--accent-rgb) / 0.16), 0 0 24px rgb(var(--accent-rgb) / 0.08);
 
   --ok: #4ade80;
-  --warn: #f5a524;
-  --danger: #f87171;
-  --danger-soft: rgb(248 113 113 / 0.12);
+  --warn: var(--accent);
+  --danger-rgb: 248 113 113;
+  --danger: rgb(var(--danger-rgb));
+  --danger-soft: rgb(var(--danger-rgb) / 0.12);
+
+  --bar-bg: rgb(23 19 16 / 0.85);
+  --shadow: 0 10px 40px rgb(0 0 0 / 0.45);
+  --page-glow: rgb(var(--accent-rgb) / 0.07);
+
+  color-scheme: dark;
 
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 20px;
   --radius-pill: 999px;
-
-  --shadow: 0 10px 40px rgb(0 0 0 / 0.45);
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  color-scheme: dark;
+  /* The screen stays dark in both themes: it's the TV. */
+  --screen-text: #f3ece6;
+  --screen-muted: #b3a597;
+}
+
+/* Cozy light: warm paper, same amber. Applies when chosen, or when the
+   system prefers light and nothing was chosen. Keep the two blocks equal. */
+:root[data-theme="light"] {
+  --bg: #f8f1e7;
+  --bg-raised: #fffbf5;
+  --bg-elevated: #f1e7da;
+  --bg-hover: #e9dccb;
+  --border: #e5d8c6;
+  --border-strong: #d5c3ac;
+  --border-hover: #bfa98d;
+  --text: #2b2019;
+  --text-muted: #6b5a4c;
+  --text-faint: #9a8676;
+
+  --accent-rgb: 230 145 20;
+  --accent-hover: #f2a332;
+  --accent-text: #1f1405;
+  --accent-ink: #a65f00;
+  --accent-soft: rgb(var(--accent-rgb) / 0.16);
+  --glow: 0 0 60px rgb(var(--accent-rgb) / 0.28), 0 0 18px rgb(var(--accent-rgb) / 0.12);
+
+  --ok: #15803d;
+  --danger-rgb: 200 50 50;
+
+  --bar-bg: rgb(255 251 245 / 0.88);
+  --shadow: 0 10px 32px rgb(90 60 30 / 0.14);
+  --page-glow: rgb(var(--accent-rgb) / 0.12);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f8f1e7;
+    --bg-raised: #fffbf5;
+    --bg-elevated: #f1e7da;
+    --bg-hover: #e9dccb;
+    --border: #e5d8c6;
+    --border-strong: #d5c3ac;
+    --border-hover: #bfa98d;
+    --text: #2b2019;
+    --text-muted: #6b5a4c;
+    --text-faint: #9a8676;
+
+    --accent-rgb: 230 145 20;
+    --accent-hover: #f2a332;
+    --accent-text: #1f1405;
+    --accent-ink: #a65f00;
+    --accent-soft: rgb(var(--accent-rgb) / 0.16);
+    --glow: 0 0 60px rgb(var(--accent-rgb) / 0.28), 0 0 18px rgb(var(--accent-rgb) / 0.12);
+
+    --ok: #15803d;
+    --danger-rgb: 200 50 50;
+
+    --bar-bg: rgb(255 251 245 / 0.88);
+    --shadow: 0 10px 32px rgb(90 60 30 / 0.14);
+    --page-glow: rgb(var(--accent-rgb) / 0.12);
+
+    color-scheme: light;
+  }
+}
+
+/* Theme toggle shows the theme you'd switch to. */
+.theme-icon-light {
+  display: none;
+}
+
+:root[data-theme="light"] .theme-icon-light {
+  display: block;
+}
+
+:root[data-theme="light"] .theme-icon-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .theme-icon-light {
+    display: block;
+  }
+
+  :root:not([data-theme="dark"]) .theme-icon-dark {
+    display: none;
+  }
 }
 
 *,
@@ -45,7 +142,7 @@ body {
 
 body {
   background:
-    radial-gradient(1200px 600px at 50% -10%, rgb(245 165 36 / 0.07), transparent 70%),
+    radial-gradient(1200px 600px at 50% -10%, var(--page-glow), transparent 70%),
     var(--bg);
   color: var(--text);
   font-family: var(--font-sans), system-ui, sans-serif;
@@ -93,8 +190,8 @@ input {
 }
 
 .btn:hover:not(:disabled) {
-  background: #2a221d;
-  border-color: #5a4a3f;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 .btn:active:not(:disabled) {
@@ -120,12 +217,12 @@ input {
 
 .btn-danger {
   background: var(--danger-soft);
-  border-color: rgb(248 113 113 / 0.4);
+  border-color: rgb(var(--danger-rgb) / 0.4);
   color: var(--danger);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: rgb(248 113 113 / 0.2);
+  background: rgb(var(--danger-rgb) / 0.2);
   border-color: var(--danger);
 }
 
@@ -202,7 +299,14 @@ input {
   border-radius: 8px;
   background: var(--accent);
   color: var(--accent-text);
-  box-shadow: 0 0 20px rgb(245 165 36 / 0.35);
+  box-shadow: 0 0 20px rgb(var(--accent-rgb) / 0.35);
+}
+
+.corner {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 5;
 }
 
 .visually-hidden {
