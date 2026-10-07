@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import type { ConnectionPhase } from "@dagleitv/rtc-core";
+import type { ConnectionPhase, VoiceState } from "@dagleitv/rtc-core";
 import { LinkIcon, RefreshIcon, ScreenShareIcon, TvIcon } from "../../icons";
 import { Controls } from "./Controls";
 import styles from "./room.module.css";
@@ -19,6 +19,9 @@ interface StageProps {
   onStopShare(): void;
   onCopyLink(): void;
   onReconnect(): void;
+  micState: VoiceState;
+  localSpeaking: boolean;
+  onToggleMic(): void;
 }
 
 interface OverlayContent {
@@ -31,7 +34,7 @@ interface OverlayContent {
 
 /** The screen, its empty-state message, and the control bar. Fullscreen wraps all three. */
 export function Stage(props: StageProps) {
-  const { videoRef } = props;
+  const { videoRef, onToggleMic } = props;
   const stageRef = useRef<HTMLDivElement>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -100,10 +103,11 @@ export function Stage(props: StageProps) {
       if (target?.closest("input, textarea, select, [contenteditable]")) return;
       if (e.key === "f" || e.key === "F") toggleFullscreen();
       else if (e.key === "m" || e.key === "M") toggleMute();
+      else if (e.key === "v" || e.key === "V") onToggleMic();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggleFullscreen, toggleMute]);
+  }, [toggleFullscreen, toggleMute, onToggleMic]);
 
   const overlay = overlayFor(props);
   const live = props.remoteSharing && !overlay;
@@ -135,6 +139,9 @@ export function Stage(props: StageProps) {
         )}
       </div>
       <Controls
+        micState={props.micState}
+        localSpeaking={props.localSpeaking}
+        onToggleMic={onToggleMic}
         sharing={props.sharing}
         shareDisabled={props.remoteSharing}
         onShare={props.onShare}

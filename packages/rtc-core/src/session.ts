@@ -19,6 +19,11 @@ export interface SessionEvents {
   onRemoteSharing?(sharing: boolean): void;
   /** The local capture ended on its own (e.g. browser "Stop sharing" bar). */
   onLocalShareEnded?(): void;
+  /** Remote voice (M4) as its own stream. Same object across calls. */
+  onRemoteVoice?(stream: MediaStream): void;
+  onRemoteVoiceState?(state: VoiceState): void;
+  /** The local mic track ended on its own (e.g. device unplugged). */
+  onLocalVoiceEnded?(): void;
   onError?(error: Error): void;
 }
 
@@ -35,7 +40,12 @@ export interface PeerSessionOptions {
   events?: SessionEvents;
 }
 
-type ControlMessage = { type: "share-state"; sharing: boolean };
+/** "muted" keeps the mic open but sends silence (track.enabled = false). */
+export type VoiceState = "off" | "muted" | "live";
+
+type ControlMessage =
+  | { type: "share-state"; sharing: boolean }
+  | { type: "voice-state"; state: VoiceState };
 
 /**
  * Two-peer session over a fixed 3-transceiver layout (see layout.ts).
@@ -45,7 +55,8 @@ type ControlMessage = { type: "share-state"; sharing: boolean };
  * that joined into an occupied room only answers. No glare is possible.
  * Starting/stopping a share is replaceTrack() on already-sendrecv
  * transceivers, so it needs no renegotiation. Both peers can share because
- * both sides' transceivers are sendrecv.
+ * both sides' transceivers are sendrecv. Voice (M4) works the same way on the
+ * third transceiver.
  */
 export class PeerSession {
   private readonly signaling: SignalingChannel;
@@ -62,6 +73,10 @@ export class PeerSession {
   /** Shared msid holder so screen video+audio land in one sync group. */
   private screenMsid = new MediaStream();
   private localShare: MediaStream | null = null;
+  private remoteVoice = new MediaStream();
+  private remoteVoiceState: VoiceState = "off";
+  private localVoice: MediaStreamTrack | null = null;
+  private voiceMuted = false;
   private readonly resolveIce: (() => Promise<RTCIceServer[]>) | null;
   private closed = false;
   private phase: ConnectionPhase = "idle";
@@ -132,9 +147,47 @@ export class PeerSession {
     this.sendControl({ type: "share-state", sharing: false });
   }
 
+  get voiceState(): VoiceState {
+    return !this.localVoice ? "off" : this.voiceMuted ? "muted" : "live";
+  }
+
+  /** Starts sending this mic track, unmuted. The session owns and stops it. */
+  startVoice(track: MediaStreamTrack): void {
+    this.stopVoice();
+    this.localVoice = track;
+    this.voiceMuted = false;
+    track.enabled = true;
+    track.addEventListener("ended", () => {
+      if (this.localVoice === track) {
+        this.stopVoice();
+        this.events.onLocalVoiceEnded?.();
+      }
+    });
+    this.applyLocalVoice();
+    this.sendVoiceState();
+  }
+
+  setVoiceMuted(muted: boolean): void {
+    if (!this.localVoice) return;
+    this.voiceMuted = muted;
+    this.localVoice.enabled = !muted;
+    this.sendVoiceState();
+  }
+
+  stopVoice(): void {
+    const track = this.localVoice;
+    if (!track) return;
+    this.localVoice = null;
+    this.voiceMuted = false;
+    track.stop();
+    this.applyLocalVoice();
+    this.sendVoiceState();
+  }
+
   close(): void {
     if (this.closed) return;
     this.stopSharing();
+    this.stopVoice();
     this.closed = true;
     this.teardownPeer();
     this.signaling.close();
@@ -157,6 +210,7 @@ export class PeerSession {
     pc.addTransceiver("audio", { direction: "sendrecv" }); // voice (M4)
     this.ctl = this.createControlChannel(pc);
     this.applyLocalShare();
+    this.applyLocalVoice();
     this.setPhase("negotiating");
     await pc.setLocalDescription();
     this.signaling.send({ kind: "offer", sdp: pc.localDescription!.toJSON() });
@@ -175,6 +229,7 @@ export class PeerSession {
         if (i < 2) t.sender.setStreams(this.screenMsid);
       });
       this.applyLocalShare();
+      this.applyLocalVoice();
       await pc.setLocalDescription();
       this.signaling.send({ kind: "answer", sdp: pc.localDescription!.toJSON() });
       await this.flushCandidates();
@@ -218,6 +273,9 @@ export class PeerSession {
       if (slot === "screen-video" || slot === "screen-audio") {
         this.remoteScreen.addTrack(e.track);
         this.events.onRemoteStream?.(this.remoteScreen);
+      } else if (slot === "voice") {
+        this.remoteVoice.addTrack(e.track);
+        this.events.onRemoteVoice?.(this.remoteVoice);
       }
     };
     return pc;
@@ -231,17 +289,23 @@ export class PeerSession {
     this.pc = null;
     this.pendingCandidates = [];
     this.remoteScreen = new MediaStream();
+    this.remoteVoice = new MediaStream();
     if (hadRemote) this.events.onRemoteSharing?.(false);
+    this.setRemoteVoiceState("off");
   }
 
   /** Negotiated data channel (id 0) carrying app-level control messages. */
   private createControlChannel(pc: RTCPeerConnection): RTCDataChannel {
     const ch = pc.createDataChannel("ctl", { negotiated: true, id: 0 });
-    ch.onopen = () => this.sendControl({ type: "share-state", sharing: this.isSharing });
+    ch.onopen = () => {
+      this.sendControl({ type: "share-state", sharing: this.isSharing });
+      this.sendVoiceState();
+    };
     ch.onmessage = (e) => {
       try {
         const msg = JSON.parse(String(e.data)) as ControlMessage;
         if (msg.type === "share-state") this.events.onRemoteSharing?.(msg.sharing);
+        else if (msg.type === "voice-state") this.setRemoteVoiceState(msg.state);
       } catch {
         /* ignore malformed control messages */
       }
@@ -251,6 +315,22 @@ export class PeerSession {
 
   private sendControl(msg: ControlMessage): void {
     if (this.ctl?.readyState === "open") this.ctl.send(JSON.stringify(msg));
+  }
+
+  private sendVoiceState(): void {
+    this.sendControl({ type: "voice-state", state: this.voiceState });
+  }
+
+  private setRemoteVoiceState(state: VoiceState): void {
+    if (state !== "off" && state !== "muted" && state !== "live") return;
+    if (this.remoteVoiceState === state) return;
+    this.remoteVoiceState = state;
+    this.events.onRemoteVoiceState?.(state);
+  }
+
+  private applyLocalVoice(): void {
+    const voice = this.pc?.getTransceivers()[2];
+    if (voice) void voice.sender.replaceTrack(this.localVoice);
   }
 
   private applyLocalShare(): void {

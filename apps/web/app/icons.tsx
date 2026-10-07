@@ -61,6 +61,21 @@ export const MuteIcon = icon(
   </>,
 );
 
+export const MicIcon = icon(
+  <>
+    <rect x="9" y="2" width="6" height="12" rx="3" />
+    <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4" />
+  </>,
+);
+
+export const MicOffIcon = icon(
+  <>
+    <path d="M2 2l20 20" />
+    <path d="M18.9 13.4A7 7 0 0 0 19 11v-1M5 10v1a7 7 0 0 0 11.7 5.2M12 18v4" />
+    <path d="M9 9v2a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.7-1.3" />
+  </>,
+);
+
 export const LinkIcon = icon(
   <>
     <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />

@@ -12,7 +12,9 @@
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm --filter @dagleitv/web build",
     "e2e": "node scripts/e2e-m1.mjs",
-    "e2e:ice": "node scripts/e2e-ice.mjs"
+    "e2e:ice": "node scripts/e2e-ice.mjs",
+    "e2e:ui": "node scripts/e2e-ui.mjs",
+    "e2e:voice": "node scripts/e2e-voice.mjs"
   },
   "devDependencies": {
     "playwright-core": "^1.63.0",

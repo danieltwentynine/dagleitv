@@ -7,11 +7,39 @@ export async function captureDisplay(): Promise<MediaStream> {
   // systemAudio / selfBrowserSurface aren't in every lib.dom version.
   const constraints = {
     video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } },
-    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    audio: {
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+      // Leave out sound this page plays (the partner's voice), so it isn't
+      // captured with the system audio and echoed back to them.
+      restrictOwnAudio: true,
+    },
     systemAudio: "include",
     selfBrowserSurface: "exclude",
   } as DisplayMediaStreamOptions;
   return navigator.mediaDevices.getDisplayMedia(constraints);
+}
+
+/** Microphone for voice chat (M4), with the browser's voice processing on. */
+export async function captureMic(): Promise<MediaStreamTrack> {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+  });
+  return stream.getAudioTracks()[0]!;
+}
+
+/** Synthetic mic (a steady tone) for tests. Must be called from a user gesture. */
+export function captureFakeMic(): MediaStreamTrack {
+  const audioCtx = new AudioContext();
+  const osc = audioCtx.createOscillator();
+  osc.frequency.value = 330;
+  const dest = audioCtx.createMediaStreamDestination();
+  osc.connect(dest);
+  osc.start();
+  const track = dest.stream.getAudioTracks()[0]!;
+  track.addEventListener("ended", () => void audioCtx.close());
+  return track;
 }
 
 /**
