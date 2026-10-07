@@ -1,0 +1,31 @@
+# Render Blueprint for the signaling server (apps/signaling).
+# The web app deploys separately on Vercel (Root Directory: apps/web).
+# Node version comes from .nvmrc (22).
+services:
+  - type: web
+    name: dagleitv-signaling
+    runtime: node
+    region: virginia
+    plan: free # free sleeps after ~15 min idle; pick a paid instance to keep it awake
+    # Repo root, not apps/signaling: the server imports the workspace package
+    # @dagleitv/protocol, so pnpm must install from the workspace root.
+    buildCommand: npx --yes pnpm@10.28.0 install --frozen-lockfile --filter "@dagleitv/signaling..."
+    startCommand: cd apps/signaling && ./node_modules/.bin/tsx src/server.ts
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - apps/signaling/**
+        - packages/protocol/**
+        - pnpm-lock.yaml
+        - render.yaml
+    envVars:
+      # Your Vercel URL(s), comma-separated, e.g. https://dagleitv.vercel.app
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: CF_TURN_KEY_ID
+        sync: false
+      - key: CF_TURN_API_TOKEN
+        sync: false
+      - key: TRUST_PROXY
+        value: "1"
