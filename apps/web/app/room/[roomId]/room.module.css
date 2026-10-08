@@ -189,3 +189,80 @@
   gap: var(--space-3);
   margin-top: var(--space-3);
 }
+
+.errorGate {
+  padding-bottom: var(--space-6);
+}
+
+.lobbyRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-7);
+  text-align: center;
+  translate: -50% -50%;
+  --b: var(--stroke-2);
+}
+
+.panel h1,
+.panel p {
+  margin: 0;
+}
+
+.panel p {
+  max-width: 340px;
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.linkRow :global(.input) {
+  width: 380px;
+}
+
+.fsAlert {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: var(--z-overlay);
+}
+
+.fsToast {
+  top: calc(var(--space-4) + 40px);
+  right: var(--space-4);
+}
+
+.fsToast p {
+  margin: 0;
+}
+
+.stepsLine {
+  margin: 0;
+}
+
+.fsBadge {
+  --fill: var(--on-brand);
+  --bd: var(--on-brand);
+  color: var(--brand);
+}
+
+/* Below 1500px the top bar keeps icons and values, drops the words around them. */
+@media (max-width: 1500px) {
+  .hideNarrow {
+    display: none;
+  }
+}

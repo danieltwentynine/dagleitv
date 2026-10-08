@@ -47,7 +47,7 @@ try {
 
   const c = await open();
   await c.getByTestId("join").click();
-  await c.getByText("Room is full").waitFor({ timeout: 5000 });
+  await c.getByText("Room full", { exact: true }).waitFor({ timeout: 5000 });
   assert(true, "third peer is rejected (room full)");
 
   const check = async (viewer, label) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   PeerSession,
@@ -14,8 +14,8 @@ import {
   type ConnectionSnapshot,
   type SignalQuality,
 } from "@dagleitv/rtc-core";
-import { WarnIcon, CloseIcon } from "../../icons";
-import { EnterRoom } from "./EnterRoom";
+import { CloseIcon, StopIcon, WarnIcon } from "../../icons";
+import { EnterRoom, type JoinFailure } from "./EnterRoom";
 import { LeaveDialog } from "./LeaveDialog";
 import { TopBar } from "./TopBar";
 import { Stage } from "./Stage";
@@ -50,6 +50,9 @@ export function Room({ roomId }: { roomId: string }) {
   const [joined, setJoined] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<JoinFailure | null>(null);
+  const [shareHasAudio, setShareHasAudio] = useState(true);
+  const [hadPartner, setHadPartner] = useState(false);
   const [remoteSharing, setRemoteSharing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [needsPlayClick, setNeedsPlayClick] = useState(false);
@@ -61,6 +64,7 @@ export function Room({ roomId }: { roomId: string }) {
   const [unread, setUnread] = useState(0);
   const chatOpenRef = useRef(true);
   const chatId = useRef(0);
+  const lastPartnerChat = useMemo(() => [...chat].reverse().find((m) => m.from === "partner") ?? null, [chat]);
   const [toast, setToast] = useState<string | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
 
@@ -149,6 +153,8 @@ export function Room({ roomId }: { roomId: string }) {
   /** Joins the room; also used to reconnect, replacing any previous session. */
   const join = useCallback(async () => {
     setError(null);
+    setFailure(null);
+    setHadPartner(false);
     setJoining(true);
     sessionRef.current?.close();
     sessionRef.current = null;
@@ -191,11 +197,7 @@ export function Room({ roomId }: { roomId: string }) {
     try {
       const result = await session.start(roomId);
       if (!result.ok) {
-        setError(
-          result.error === "room-full"
-            ? "Room is full. Only two people can be in a room."
-            : "This room link isn't valid.",
-        );
+        setFailure(result.error === "room-full" ? "room-full" : "invalid-room");
         session.close();
         sessionRef.current = null;
         setJoined(false);
@@ -203,7 +205,7 @@ export function Room({ roomId }: { roomId: string }) {
       }
       setJoined(true);
     } catch {
-      setError("Can't reach the Daglei TV server. Check your connection and try again.");
+      setFailure("offline");
       session.close();
       sessionRef.current = null;
     } finally {
@@ -218,6 +220,7 @@ export function Room({ roomId }: { roomId: string }) {
       const fake = new URLSearchParams(window.location.search).has("fake");
       const stream = fake ? captureFake() : await captureDisplay();
       session.startSharing(stream);
+      setShareHasAudio(stream.getAudioTracks().length > 0);
       setSharing(true);
     } catch (e) {
       // NotAllowedError = the user closed the picker without choosing.
@@ -237,6 +240,10 @@ export function Room({ roomId }: { roomId: string }) {
     setChatOpen(next);
     if (next) setUnread(0);
   }, []);
+
+  useEffect(() => {
+    if (phase === "connected") setHadPartner(true);
+  }, [phase]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -270,6 +277,7 @@ export function Room({ roomId }: { roomId: string }) {
           onCopyLink={copyLink}
           joining={joining}
           error={error}
+          failure={failure}
         />
         {toast && <div className={`toast cut ${styles.toastPos}`} role="status">{toast}</div>}
       </>
@@ -281,6 +289,7 @@ export function Room({ roomId }: { roomId: string }) {
       roomId={roomId}
       phase={phase}
       sharing={sharing}
+      partnerLeft={hadPartner && phase === "waiting-for-peer"}
       remoteSharing={remoteSharing}
       remoteVoiceState={voice.remoteVoiceState}
       remoteSpeaking={voice.remoteSpeaking}
@@ -300,8 +309,14 @@ export function Room({ roomId }: { roomId: string }) {
       <Stage
         topBar={topBar}
         videoRef={videoRef}
+        roomId={roomId}
         phase={phase}
         sharing={sharing}
+        shareHasAudio={shareHasAudio}
+        partnerLeft={hadPartner && phase === "waiting-for-peer"}
+        unreadChat={unread}
+        lastChat={lastPartnerChat}
+        onLeave={requestLeave}
         remoteSharing={remoteSharing}
         needsPlayClick={needsPlayClick}
         onPlayClick={() => {
@@ -323,6 +338,17 @@ export function Room({ roomId }: { roomId: string }) {
             <span className="msg-t">{error}</span>
             <button className="btn btn-sm cut" onClick={() => setError(null)} aria-label="Dismiss">
               <CloseIcon small />
+            </button>
+          </div>
+        )}
+        {sharing && !shareHasAudio && !error && (
+          <div className={`banner banner-warn cut ${styles.banner}`} role="alert">
+            <WarnIcon />
+            <div className="msg-t">
+              <b>System audio not shared.</b> Stop and re-share with &ldquo;Share system audio&rdquo; ticked.
+            </div>
+            <button className="btn btn-sm cut" onClick={stopShare}>
+              <StopIcon small /> Stop sharing
             </button>
           </div>
         )}

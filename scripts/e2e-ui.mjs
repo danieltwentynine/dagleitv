@@ -72,7 +72,7 @@ try {
 
   const c = await open(`${WEB}/room/${room}`);
   await c.getByTestId("join").click();
-  await c.getByText("Room is full").waitFor({ timeout: 5000 });
+  await c.getByText("Room full", { exact: true }).waitFor({ timeout: 5000 });
   assert(true, "third peer rejected");
   await c.close();
 
@@ -128,8 +128,8 @@ try {
   await b.getByTestId("confirm-leave").click();
   await b.waitForURL(`${WEB}/`);
   assert(true, "Leave (confirmed) takes B to the home page");
-  await a.getByText("Waiting for your partner").waitFor({ timeout: 10000 });
-  assert(true, "A returns to waiting when B leaves");
+  await a.getByText("Partner left", { exact: true }).waitFor({ timeout: 10000 });
+  assert(true, "A sees Partner left when B leaves");
   assert((await a.title()).startsWith("Waiting for partner"), "A's tab title shows Waiting for partner");
 
   // Nothing live: Leave goes straight home without asking.

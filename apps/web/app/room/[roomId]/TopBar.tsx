@@ -28,6 +28,7 @@ interface TopBarProps {
   roomId: string;
   phase: ConnectionPhase;
   sharing: boolean;
+  partnerLeft: boolean;
   remoteSharing: boolean;
   remoteVoiceState: VoiceState;
   remoteSpeaking: boolean;
@@ -41,13 +42,15 @@ interface TopBarProps {
 }
 
 export function TopBar(props: TopBarProps) {
-  const { roomId, phase, sharing, remoteSharing, remoteVoiceState, remoteSpeaking, signal, chatOpen, unreadChat } = props;
+  const { roomId, phase, sharing, partnerLeft, remoteSharing, remoteVoiceState, remoteSpeaking, signal, chatOpen, unreadChat } = props;
   const status: { label: string; tone: Tone } =
     phase === "connected" && sharing
       ? { label: "you are live", tone: "live" }
       : phase === "connected" && remoteSharing
         ? { label: "partner is sharing", tone: "live" }
-        : PHASE_TAG[phase];
+        : partnerLeft
+          ? { label: "partner left", tone: "warn" }
+          : PHASE_TAG[phase];
 
   return (
     <header className="topbar">
@@ -71,7 +74,7 @@ export function TopBar(props: TopBarProps) {
           title={PARTNER_MIC_LABEL[remoteVoiceState]}
         >
           {remoteVoiceState === "live" ? <MicIcon small /> : <MicOffIcon small />}
-          {PARTNER_MIC_LABEL[remoteVoiceState]}
+          <span className={styles.hideNarrow}>{PARTNER_MIC_LABEL[remoteVoiceState]}</span>
         </span>
       )}
       <span className="sr" data-testid="remote-sharing">
@@ -84,7 +87,7 @@ export function TopBar(props: TopBarProps) {
           data-testid="signal"
           title={`Connection: ${SIGNAL_LABEL[signal]}`}
         >
-          signal {SIGNAL_LABEL[signal]}
+          <span className={styles.hideNarrow}>signal</span> {SIGNAL_LABEL[signal]}
         </span>
       )}
       <span
