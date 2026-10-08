@@ -1,4 +1,5 @@
-import { LinkIcon, TvIcon } from "../../icons";
+import { LinkIcon, PlayIcon, WarnIcon } from "../../icons";
+import { Logo } from "../../Logo";
 import { ThemeToggle } from "../../ThemeToggle";
 import styles from "./room.module.css";
 
@@ -12,44 +13,40 @@ interface EnterRoomProps {
   error: string | null;
 }
 
-/** Pre-join card. The "Enter room" click is the gesture that lets audio autoplay. */
+/** Pre-join gate. The "Join room" click is the gesture that lets audio autoplay. */
 export function EnterRoom({ roomId, forceRelay, onForceRelayChange, onJoin, onCopyLink, joining, error }: EnterRoomProps) {
   return (
-    <main className={styles.enterMain}>
-      <ThemeToggle className="corner" />
-      <div className={`card ${styles.enterCard}`}>
-        <span className="brand">
-          <span className="brand-mark">
-            <TvIcon size={16} />
-          </span>
-          Daglei TV
-        </span>
-
-        <div className={styles.enterHead}>
-          <h1>
-            Room <span className={styles.code}>{roomId}</span>
-          </h1>
-          <p>Your partner joins with the same link.</p>
+    <main className={styles.lobby}>
+      <header className={styles.lobbyBrand}>
+        <Logo />
+        <ThemeToggle />
+      </header>
+      <div className="gate">
+        <span className="tag cut c-s tag-mute">not joined</span>
+        <h1 className="t-display-m">Room</h1>
+        <div className="code" data-testid="room-code">
+          {roomId}
         </div>
-
-        <div className={styles.enterActions}>
-          <button data-testid="join" className="btn btn-primary btn-lg" onClick={onJoin} disabled={joining}>
-            {joining ? "Entering…" : "Enter room"}
+        <p>Your partner joins with the same link.</p>
+        <div className={styles.actions}>
+          <button data-testid="join" className="btn btn-primary btn-lg cut" onClick={onJoin} disabled={joining}>
+            <PlayIcon /> {joining ? "Joining…" : "Join room"}
           </button>
-          <button className="btn btn-ghost" onClick={onCopyLink}>
-            <LinkIcon size={16} /> Copy invite link
+          <button className="btn btn-lg cut" onClick={onCopyLink}>
+            <LinkIcon /> Copy invite link
           </button>
         </div>
 
         {error && (
-          <p className={styles.banner} role="alert">
-            {error}
-          </p>
+          <div className="banner banner-warn cut" role="alert">
+            <WarnIcon />
+            <span className="msg-t">{error}</span>
+          </div>
         )}
 
-        <details className={styles.advanced} open={forceRelay || undefined}>
-          <summary>Advanced</summary>
-          <label className={styles.checkbox}>
+        <details open={forceRelay || undefined}>
+          <summary className="t-label mute">Advanced</summary>
+          <label className={`t-meta ${styles.relay}`}>
             <input
               type="checkbox"
               data-testid="force-relay"

@@ -3,7 +3,10 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ROOM_ID_PATTERN } from "@dagleitv/protocol";
-import { ArrowRightIcon, TvIcon } from "./icons";
+import { AnimatedAscii, Ascii } from "./AsciiArt";
+import { LANDING_FRAMES, LANDING_STARS } from "./ascii";
+import { PlayIcon } from "./icons";
+import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import styles from "./page.module.css";
 
@@ -37,46 +40,95 @@ export default function Home() {
   };
 
   return (
-    <main className={styles.main}>
-      <ThemeToggle className="corner" />
-      <div className={`card ${styles.card}`}>
-        <div className={styles.hero}>
-          <div className={styles.logo}>
-            <TvIcon size={32} />
+    <div className={styles.land}>
+      <header className={styles.head}>
+        <Logo />
+        <div className={styles.headRight}>
+          <span className="t-label dim">private cinema &middot; two seats &middot; no accounts</span>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <main className={styles.main}>
+        <div>
+          <div className={styles.eyebrow}>
+            <span className="tag cut c-s tag-live">
+              <span className="dot" /> now showing
+            </span>
+            <span className="t-label dim">a screen shared between two people</span>
           </div>
-          <h1 className={styles.title}>Daglei TV</h1>
-          <p className={styles.tagline}>Watch together, privately.</p>
+          <h1 className={`t-display-xl ${styles.title}`}>
+            Watch
+            <br />
+            together,
+            <br />
+            <em>1000 km</em> apart.
+          </h1>
+          <p className={`t-body-lg ${styles.pitch}`}>
+            One of you shares a screen. Both of you press play. Voice and text chat are right there on the side.
+          </p>
+          <div className={styles.actions}>
+            <button className="btn btn-primary btn-lg cut" onClick={() => router.push(`/room/${randomRoomCode()}`)}>
+              <PlayIcon /> Create room
+            </button>
+            <span className={`t-label ${styles.or}`}>or</span>
+            <form className={styles.join} onSubmit={joinExisting}>
+              <div className={`input cut c-bl${invalid ? " err" : ""}`}>
+                <span className="pre">/</span>
+                <input
+                  aria-label="Room code or link"
+                  aria-invalid={invalid}
+                  placeholder="room code or link"
+                  value={code}
+                  onChange={(e) => {
+                    setCode(e.target.value);
+                    setInvalid(false);
+                  }}
+                />
+              </div>
+              <button className="btn cut" type="submit" disabled={!code.trim()}>
+                Join
+              </button>
+            </form>
+          </div>
+          {invalid && (
+            <p className={`${styles.err} t-body`} role="alert">
+              That is not a room code or link. Check it and try again.
+            </p>
+          )}
         </div>
 
-        <button
-          className={`btn btn-primary btn-lg ${styles.start}`}
-          onClick={() => router.push(`/room/${randomRoomCode()}`)}
-        >
-          Start a room
-        </button>
+        <div className={styles.right}>
+          <Ascii text={LANDING_STARS} className={styles.stars} />
+          <AnimatedAscii frames={LANDING_FRAMES} ms={400} className={styles.hero} />
+          <div className={styles.how}>
+            <h2 className="t-label">How it works</h2>
+            <ol className={styles.led}>
+              <li>
+                <span className={styles.n}>01</span>
+                <span>Create a room and send the link.</span>
+              </li>
+              <li>
+                <span className={styles.n}>02</span>
+                <span>Share your entire screen. Tick &ldquo;Share system audio&rdquo;.</span>
+              </li>
+              <li>
+                <span className={styles.n}>03</span>
+                <span>Press play.</span>
+              </li>
+            </ol>
+          </div>
+          <div className={`${styles.note} cut c-diag f-void b-line`}>
+            <span className="t-label brand">Honest note</span>
+            <span>Works in Chrome or Edge on Windows. Two people only. Rooms are gone when you both leave.</span>
+          </div>
+        </div>
+      </main>
 
-        <div className={styles.divider}>or join one</div>
-
-        <form className={styles.joinForm} onSubmit={joinExisting}>
-          <input
-            className="input"
-            placeholder="Paste a room link or code"
-            aria-label="Room link or code"
-            aria-invalid={invalid}
-            value={code}
-            onChange={(e) => {
-              setCode(e.target.value);
-              setInvalid(false);
-            }}
-          />
-          <button className="btn btn-icon" type="submit" aria-label="Join room" disabled={!code.trim()}>
-            <ArrowRightIcon />
-          </button>
-        </form>
-        {invalid && <p className={styles.error}>That doesn&apos;t look like a room link or code.</p>}
-
-        <p className={styles.footnote}>Two people per room. No accounts, nothing stored.</p>
-      </div>
-    </main>
+      <footer className={styles.foot}>
+        <span>daglei tv &mdash; built for two</span>
+        <span>popcorn not included</span>
+      </footer>
+    </div>
   );
 }

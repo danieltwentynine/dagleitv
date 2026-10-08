@@ -14,12 +14,12 @@ import {
   type ConnectionSnapshot,
   type SignalQuality,
 } from "@dagleitv/rtc-core";
-import { CloseIcon } from "../../icons";
+import { WarnIcon, CloseIcon } from "../../icons";
 import { EnterRoom } from "./EnterRoom";
 import { LeaveDialog } from "./LeaveDialog";
 import { TopBar } from "./TopBar";
 import { Stage } from "./Stage";
-import { ChatDrawer, type ChatLine } from "./ChatDrawer";
+import { ChatPanel, type ChatLine } from "./ChatPanel";
 import { useVoice } from "./useVoice";
 import styles from "./room.module.css";
 
@@ -55,10 +55,11 @@ export function Room({ roomId }: { roomId: string }) {
   const [needsPlayClick, setNeedsPlayClick] = useState(false);
   const [forceRelay, setForceRelay] = useState(false);
   const [snap, setSnap] = useState<ConnectionSnapshot | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [chat, setChat] = useState<ChatLine[]>([]);
   const [unread, setUnread] = useState(0);
-  const chatOpenRef = useRef(false);
+  const chatOpenRef = useRef(true);
   const chatId = useRef(0);
   const [toast, setToast] = useState<string | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
@@ -237,6 +238,18 @@ export function Room({ roomId }: { roomId: string }) {
     if (next) setUnread(0);
   }, []);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if ((e.target as HTMLElement | null)?.closest("input, textarea, select, [contenteditable]")) return;
+      if (e.key === "c" || e.key === "C") toggleChat();
+      else if (e.key === "?") setHelpOpen((o) => !o);
+      else if (e.key === "Escape") setHelpOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggleChat]);
+
   const sendChat = useCallback((text: string) => {
     sessionRef.current?.sendChat(text);
     setChat((c) => [...c, { id: chatId.current++, from: "me", text, ts: Date.now() }]);
@@ -258,35 +271,34 @@ export function Room({ roomId }: { roomId: string }) {
           joining={joining}
           error={error}
         />
-        {toast && <div className={styles.toast} role="status">{toast}</div>}
+        {toast && <div className={`toast cut ${styles.toastPos}`} role="status">{toast}</div>}
       </>
     );
   }
 
+  const topBar = (
+    <TopBar
+      roomId={roomId}
+      phase={phase}
+      sharing={sharing}
+      remoteSharing={remoteSharing}
+      remoteVoiceState={voice.remoteVoiceState}
+      remoteSpeaking={voice.remoteSpeaking}
+      signal={signal}
+      chatOpen={chatOpen}
+      unreadChat={unread}
+      onCopyLink={copyLink}
+      onToggleChat={toggleChat}
+      onToggleHelp={() => setHelpOpen((o) => !o)}
+      onLeave={requestLeave}
+    />
+  );
+
   return (
-    <main className={styles.room}>
+    <div className={`room${chatOpen ? "" : " nochat"} ${styles.shell}`}>
       {voiceAudio}
-      <TopBar
-        roomId={roomId}
-        phase={phase}
-        remoteSharing={remoteSharing}
-        remoteVoiceState={voice.remoteVoiceState}
-        remoteSpeaking={voice.remoteSpeaking}
-        onCopyLink={copyLink}
-        signal={signal}
-        unreadChat={unread}
-        onToggleChat={toggleChat}
-        onLeave={requestLeave}
-      />
-      {error && (
-        <div className={styles.banner} role="alert">
-          <p>{error}</p>
-          <button className="btn btn-ghost btn-icon" aria-label="Dismiss" onClick={() => setError(null)}>
-            <CloseIcon />
-          </button>
-        </div>
-      )}
       <Stage
+        topBar={topBar}
         videoRef={videoRef}
         phase={phase}
         sharing={sharing}
@@ -304,7 +316,40 @@ export function Room({ roomId }: { roomId: string }) {
         onToggleMic={voice.toggleMic}
         onCopyLink={copyLink}
         onReconnect={join}
-      />
+      >
+        {error && (
+          <div className={`banner banner-warn cut ${styles.banner}`} role="alert">
+            <WarnIcon />
+            <span className="msg-t">{error}</span>
+            <button className="btn btn-sm cut" onClick={() => setError(null)} aria-label="Dismiss">
+              <CloseIcon small />
+            </button>
+          </div>
+        )}
+        {helpOpen && (
+          <div className={`pop cut c-diag ${styles.help}`} role="dialog" aria-label="Keyboard shortcuts">
+            <h4>Shortcuts</h4>
+            <div className="keys">
+              <span className="kbd cut c-s">C</span>
+              <span>toggle chat</span>
+              <span className="kbd cut c-s">F</span>
+              <span>fullscreen</span>
+              <span className="kbd cut c-s">M</span>
+              <span>mute or unmute mic</span>
+              <span className="kbd cut c-s">?</span>
+              <span>this help</span>
+              <span className="kbd cut c-s">Esc</span>
+              <span>leave fullscreen</span>
+            </div>
+          </div>
+        )}
+        {toast && (
+          <div className={`toast cut ${styles.toastPos}`} role="status">
+            {toast}
+          </div>
+        )}
+      </Stage>
+      {chatOpen && <ChatPanel onHide={toggleChat} messages={chat} canSend={phase === "connected"} onSend={sendChat} />}
       <LeaveDialog
         open={leaveOpen}
         sharing={sharing}
@@ -312,14 +357,6 @@ export function Room({ roomId }: { roomId: string }) {
         onStay={() => setLeaveOpen(false)}
         onLeave={leave}
       />
-      <ChatDrawer
-        open={chatOpen}
-        onClose={toggleChat}
-        messages={chat}
-        canSend={phase === "connected"}
-        onSend={sendChat}
-      />
-      {toast && <div className={styles.toast} role="status">{toast}</div>}
-    </main>
+    </div>
   );
 }

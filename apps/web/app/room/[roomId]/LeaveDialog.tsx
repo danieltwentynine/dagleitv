@@ -23,15 +23,19 @@ export function LeaveDialog({ open, sharing, micOn, onStay, onLeave }: LeaveDial
   const what = sharing && micOn ? "Your share and mic will stop" : sharing ? "Your share will stop" : "Your mic will turn off";
   return (
     <dialog ref={ref} className={styles.dialog} onClose={onStay} aria-labelledby="leave-title" data-testid="leave-dialog">
-      <h2 id="leave-title">Leave the room?</h2>
-      <p>{what}, and your partner will be left waiting.</p>
-      <div className={styles.dialogActions}>
-        <button className="btn" onClick={onStay} autoFocus>
-          Stay
-        </button>
-        <button className="btn btn-danger" onClick={onLeave} data-testid="confirm-leave">
-          Leave
-        </button>
+      <div className={`cut c-diag f-raised b-ink ${styles.dialogBody}`}>
+        <h2 id="leave-title" className="t-title">
+          Leave the room?
+        </h2>
+        <p>{what}, and your partner will be left waiting.</p>
+        <div className={styles.dialogActions}>
+          <button className="btn cut" onClick={onStay} autoFocus>
+            Stay
+          </button>
+          <button className="btn btn-primary cut" onClick={onLeave} data-testid="confirm-leave">
+            Leave
+          </button>
+        </div>
       </div>
     </dialog>
   );

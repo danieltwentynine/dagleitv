@@ -1,117 +1,36 @@
 import type { ReactNode, SVGProps } from "react";
 
-type IconProps = SVGProps<SVGSVGElement> & { size?: number };
+type IconProps = SVGProps<SVGSVGElement> & { small?: boolean };
 
+/** Design-system icons: 20px grid, 2px stroke, square caps, miter joins (see .ic in components.css). */
 function icon(children: ReactNode) {
-  return function Icon({ size = 18, ...props }: IconProps) {
+  return function Icon({ small, className, ...props }: IconProps) {
     return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        {...props}
-      >
+      <svg className={`ic${small ? " ic-sm" : ""}${className ? ` ${className}` : ""}`} viewBox="0 0 20 20" aria-hidden="true" {...props}>
         {children}
       </svg>
     );
   };
 }
 
-export const TvIcon = icon(
-  <>
-    <rect x="2" y="7" width="20" height="14" rx="2" />
-    <path d="m17 2-5 5-5-5" />
-  </>,
-);
-
-export const ScreenShareIcon = icon(
-  <>
-    <rect x="2" y="3" width="20" height="14" rx="2" />
-    <path d="M8 21h8M12 17v4M12 7v6M9 10l3-3 3 3" />
-  </>,
-);
-
-export const StopIcon = icon(<rect x="6" y="6" width="12" height="12" rx="2" />);
-
-export const FullscreenIcon = icon(
-  <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />,
-);
-
-export const ExitFullscreenIcon = icon(
-  <path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3" />,
-);
-
-export const VolumeIcon = icon(
-  <>
-    <path d="M11 5 6 9H2v6h4l5 4V5z" />
-    <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" />
-  </>,
-);
-
-export const MuteIcon = icon(
-  <>
-    <path d="M11 5 6 9H2v6h4l5 4V5z" />
-    <path d="m22 9-6 6M16 9l6 6" />
-  </>,
-);
-
-export const MicIcon = icon(
-  <>
-    <rect x="9" y="2" width="6" height="12" rx="3" />
-    <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4" />
-  </>,
-);
-
-export const MicOffIcon = icon(
-  <>
-    <path d="M2 2l20 20" />
-    <path d="M18.9 13.4A7 7 0 0 0 19 11v-1M5 10v1a7 7 0 0 0 11.7 5.2M12 18v4" />
-    <path d="M9 9v2a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.7-1.3" />
-  </>,
-);
-
-export const SunIcon = icon(
-  <>
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-  </>,
-);
-
-export const MoonIcon = icon(<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />);
-
-export const LeaveIcon = icon(
-  <>
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-    <path d="m16 17 5-5-5-5M21 12H9" />
-  </>,
-);
-
-export const LinkIcon = icon(
-  <>
-    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
-    <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
-  </>,
-);
-
-export const StatsIcon = icon(<path d="M3 3v18h18M7 15l4-4 3 3 6-6" />);
-
-export const CloseIcon = icon(<path d="M18 6 6 18M6 6l12 12" />);
-
-export const RefreshIcon = icon(
-  <>
-    <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
-    <path d="M21 3v5h-5" />
-  </>,
-);
-
-export const ArrowRightIcon = icon(<path d="M5 12h14M13 6l6 6-6 6" />);
-
-export const ChatIcon = icon(<path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />);
-
-export const SendIcon = icon(<path d="m22 2-7 20-4-9-9-4zM22 2 11 13" />);
+export const PlayIcon = icon(<path d="M5 3l12 7-12 7z" fill="currentColor" />);
+export const ScreenShareIcon = icon(<path d="M2 4h16v10H2zM7 18h6M10 14v4M8 9l2-2 2 2M10 7v4" />);
+export const StopIcon = icon(<path d="M4 4h12v12H4z" />);
+export const FullscreenIcon = icon(<path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5" />);
+export const ExitFullscreenIcon = icon(<path d="M7 2v5H2M18 7h-5V2M13 18v-5h5M2 13h5v5" />);
+export const CopyIcon = icon(<path d="M7 7h11v11H7zM13 7V2H2v11h5" />);
+export const LinkIcon = icon(<path d="M8 12l4-4M7 9L3 13l4 4 3-3M13 11l4-4-4-4-3 3" />);
+export const HelpIcon = icon(<path d="M7 7.5C7 5.5 8.5 4.5 10 4.5s3 1 3 2.8c0 2.7-3 2.7-3 5M10 15v1.5" />);
+export const ChatIcon = icon(<path d="M2 3h16v11H9l-5 4v-4H2z" />);
+export const LeaveIcon = icon(<path d="M8 2H2v16h6M8 10h10M14 6l4 4-4 4" />);
+export const MicIcon = icon(<path d="M7 2h6v9H7zM4 9v2a6 6 0 0 0 12 0V9M10 17v2" />);
+export const MicOffIcon = icon(<path d="M7 2h6v9H7zM4 9v2a6 6 0 0 0 12 0V9M10 17v2M2 2l16 16" />);
+export const VolumeIcon = icon(<path d="M2 7h4l5-4v14l-5-4H2zM14 7l3 3-3 3" />);
+export const MuteIcon = icon(<path d="M2 7h4l5-4v14l-5-4H2zM14 7l4 6M18 7l-4 6" />);
+export const CheckIcon = icon(<path d="M3 10l5 5 9-10" />);
+export const WarnIcon = icon(<path d="M10 2l9 16H1zM10 8v5M10 15v1.5" />);
+export const CloseIcon = icon(<path d="M4 4l12 12M16 4L4 16" />);
+export const SendIcon = icon(<path d="M2 2l16 8-16 8 3-8z" />);
+export const RetryIcon = icon(<path d="M16 8A6 6 0 1 0 15 14M16 3v5h-5" />);
+export const SunIcon = icon(<path d="M10 6v8M6 10h8M10 1v3M10 16v3M1 10h3M16 10h3M4 4l2 2M14 14l2 2M16 4l-2 2M6 14l-2 2" />);
+export const MoonIcon = icon(<path d="M16 12A7 7 0 0 1 8 4a7 7 0 1 0 8 8z" />);

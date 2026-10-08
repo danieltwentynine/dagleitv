@@ -30,7 +30,7 @@ try {
   assert(icon.ok && (icon.headers.get("content-type") ?? "").includes("svg"), "favicon served at /icon.svg");
 
   const home = await open(WEB);
-  await home.getByText("Start a room").waitFor();
+  await home.getByRole("button", { name: "Create room" }).waitFor();
   await shot(home, "1-home");
   const theme = () => home.evaluate(() => ({
     attr: document.documentElement.dataset.theme ?? null,
@@ -45,12 +45,12 @@ try {
   assert((await theme()).attr === after.attr, "theme choice survives a reload (no flash: set before paint)");
   await home.getByTestId("theme-toggle").click();
   await home.evaluate(() => localStorage.removeItem("dagleitv.theme"));
-  await home.getByLabel("Room link or code").fill("nope");
-  await home.getByLabel("Join room").click();
-  await home.getByText("doesn't look like").waitFor();
+  await home.getByLabel("Room code or link").fill("nope");
+  await home.getByRole("button", { name: "Join", exact: true }).click();
+  await home.getByText("not a room code").waitFor();
   assert(true, "home rejects a bad code");
-  await home.getByLabel("Room link or code").fill(`${WEB}/room/pastedroom123?relay=1`);
-  await home.getByLabel("Join room").click();
+  await home.getByLabel("Room code or link").fill(`${WEB}/room/pastedroom123?relay=1`);
+  await home.getByRole("button", { name: "Join", exact: true }).click();
   await home.waitForURL(/\/room\/pastedroom123$/);
   assert(true, "home accepts a pasted link");
 
@@ -65,7 +65,7 @@ try {
   await b.getByTestId("join").click();
   for (const p of [a, b]) await p.getByTestId("phase").filter({ hasText: "connected" }).waitFor({ timeout: 20000 });
   assert(true, "both peers connected (B forced relay)");
-  await a.getByText("You're connected").waitFor();
+  await a.getByText("Nobody is sharing").waitFor();
   await shot(a, "4-connected");
   assert((await a.title()).startsWith("Connected"), "tab title shows Connected");
   assert(await a.locator("header a").count() === 0, "room logo is not a link");
@@ -88,7 +88,8 @@ try {
 
   assert((await b.getByTestId("signal").getAttribute("data-quality")) === "good", "signal indicator shows Good");
 
-  await b.getByTestId("chat-toggle").click();
+  // Chat is docked open by default. A hides it, B sends, A sees the unread badge.
+  await a.getByTestId("chat-toggle").click();
   await b.getByTestId("chat-input").fill("hello from B");
   await b.getByTestId("chat-input").press("Enter");
   await a.getByTestId("chat-unread").waitFor({ timeout: 5000 });
@@ -97,8 +98,6 @@ try {
   await a.getByTestId("chat-list").getByText("hello from B").waitFor();
   assert(await b.getByTestId("chat-list").getByText("hello from B").count() === 1, "B sees own message once");
   await shot(a, "7-chat");
-  await a.getByRole("button", { name: "Close chat" }).click();
-  await b.getByRole("button", { name: "Close chat" }).click();
 
   await b.getByRole("button", { name: "Mute movie" }).click();
   assert(await b.evaluate(() => document.querySelector("video").muted), "movie mute mutes the video");

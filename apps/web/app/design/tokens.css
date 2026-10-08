@@ -1,0 +1,76 @@
+/* Daglei TV - generated from tokens.json */
+:root, [data-theme="night"] {
+  --void: #0a0a0b;
+  --panel: #131315;
+  --raised: #1c1c1f;
+  --line: #2b2b30;
+  --line-strong: #8a8a92;
+  --ink: #f2efe6;
+  --ink-dim: #b4b1a8;
+  --ink-mute: #908d85;
+  --brand: #ff4b1f;
+  --brand-hot: #ff6b45;
+  --brand-press: #e03a10;
+  --on-brand: #0a0a0b;
+  --caution: #ffd60a;
+  --on-caution: #0a0a0b;
+  --focus: #ffffff;
+  --stage: #000000;
+}
+[data-theme="paper"] {
+  --void: #f2efe6;
+  --panel: #e8e4d9;
+  --raised: #ddd8ca;
+  --line: #c9c4b5;
+  --line-strong: #6f6c64;
+  --ink: #0a0a0b;
+  --ink-dim: #45433e;
+  --ink-mute: #5a5750;
+  --brand: #b82f08;
+  --brand-hot: #d03a10;
+  --brand-press: #9a2606;
+  --on-brand: #f2efe6;
+  --caution: #6e5300;
+  --on-caution: #f2efe6;
+  --focus: #0a0a0b;
+  --stage: #000000;
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+  --radius-0: 0px;
+  --cut: 12px;
+  --cut-s: 6px;
+  --stroke-1: 1px;
+  --stroke-2: 2px;
+  --hit-min: 32px;
+  --control-h: 40px;
+  --bar-h: 44px;
+  --strip-h: 56px;
+  --chat-w: 340px;
+  --z-stage: 0;
+  --z-chrome: 10;
+  --z-overlay: 20;
+  --z-toast: 30;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+.t-display-xl { font-family: var(--font-display); font-size:136px; line-height:140px; font-weight:900; letter-spacing:0.01em; }
+.t-display-l { font-family: var(--font-display); font-size:96px; line-height:88px; font-weight:900; letter-spacing:0.01em; }
+.t-display-m { font-family: var(--font-display); font-size:56px; line-height:56px; font-weight:800; letter-spacing:0.02em; }
+.t-title { font-family: var(--font-display); font-size:28px; line-height:30px; font-weight:800; letter-spacing:0.04em; }
+.t-body-lg { font-family: var(--font-mono); font-size:16px; line-height:24px; font-weight:400; }
+.t-body { font-family: var(--font-mono); font-size:14px; line-height:22px; font-weight:400; }
+.t-label { font-family: var(--font-mono); font-size:12px; line-height:16px; font-weight:700; letter-spacing:0.1em; }
+.t-meta { font-family: var(--font-mono); font-size:12px; line-height:16px; font-weight:400; letter-spacing:0.02em; }
+.t-ascii { font-family: var(--font-mono); font-size:14px; line-height:16px; font-weight:500; }
+@font-face { font-family:"Big Shoulders Display"; src:url("/fonts/BigShouldersDisplay-Variable.woff2") format("woff2"); font-weight:100 900; font-style:normal; font-display:swap; }
+@font-face { font-family:"JetBrains Mono"; src:url("/fonts/JetBrainsMono-Variable.woff2") format("woff2"); font-weight:100 800; font-style:normal; font-display:swap; }
