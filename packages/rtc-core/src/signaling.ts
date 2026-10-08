@@ -1,6 +1,7 @@
 import { io, type Socket } from "socket.io-client";
 import type {
   ClientToServerEvents,
+  ChatMessage,
   JoinResult,
   ServerToClientEvents,
   SignalMessage,
@@ -10,6 +11,7 @@ export interface SignalingHandlers {
   onSignal(msg: SignalMessage): void;
   onPeerJoined(): void;
   onPeerLeft(): void;
+  onChat?(msg: ChatMessage): void;
   onDisconnect?(): void;
 }
 
@@ -18,6 +20,7 @@ export interface SignalingChannel {
   setHandlers(handlers: SignalingHandlers): void;
   join(roomId: string): Promise<JoinResult>;
   send(msg: SignalMessage): void;
+  sendChat(text: string): void;
   close(): void;
 }
 
@@ -30,6 +33,7 @@ export class SocketSignaling implements SignalingChannel {
     this.socket.on("signal", (msg) => this.handlers?.onSignal(msg));
     this.socket.on("peer-joined", () => this.handlers?.onPeerJoined());
     this.socket.on("peer-left", () => this.handlers?.onPeerLeft());
+    this.socket.on("chat", (msg) => this.handlers?.onChat?.(msg));
     this.socket.on("disconnect", () => this.handlers?.onDisconnect?.());
   }
 
@@ -51,6 +55,10 @@ export class SocketSignaling implements SignalingChannel {
 
   send(msg: SignalMessage): void {
     this.socket.emit("signal", msg);
+  }
+
+  sendChat(text: string): void {
+    this.socket.emit("chat", text);
   }
 
   close(): void {

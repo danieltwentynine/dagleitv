@@ -63,3 +63,18 @@ export function throughputBetween(prev: ConnectionSnapshot, next: ConnectionSnap
     recvKbps: ((next.bytesReceived - prev.bytesReceived) * 8) / dt / 1000,
   };
 }
+
+export type SignalQuality = "good" | "weak" | "offline";
+
+/** Round-trip time above which the link is called weak. */
+const WEAK_RTT_MS = 250;
+
+/**
+ * Collapses connection state into one human label. `offline` means no working
+ * link to the partner; `weak` means connected but slow enough to hurt calls.
+ */
+export function signalQuality(connected: boolean, snap: ConnectionSnapshot | null): SignalQuality {
+  if (!connected) return "offline";
+  if (snap?.rttMs != null && snap.rttMs > WEAK_RTT_MS) return "weak";
+  return "good";
+}

@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { Server } from "socket.io";
 import {
+  CHAT_MAX_LENGTH,
   ICE_PATH,
   MAX_PEERS_PER_ROOM,
   ROOM_ID_PATTERN,
@@ -105,6 +106,20 @@ io.on("connection", (socket) => {
   // Pure relay: forward to the other peer in the room, never inspect SDP.
   socket.on("signal", (msg) => {
     if (roomId) socket.to(roomId).emit("signal", msg);
+  });
+
+  // Text chat: relayed to the other peer only (the sender shows its own copy).
+  // Per-socket limit of 5 messages per 3 seconds.
+  let chatTimes: number[] = [];
+  socket.on("chat", (text) => {
+    if (!roomId || typeof text !== "string") return;
+    const trimmed = text.trim().slice(0, CHAT_MAX_LENGTH);
+    if (!trimmed) return;
+    const now = Date.now();
+    chatTimes = chatTimes.filter((t) => now - t < 3000);
+    if (chatTimes.length >= 5) return;
+    chatTimes.push(now);
+    socket.to(roomId).emit("chat", { text: trimmed, ts: now });
   });
 
   socket.on("disconnect", () => {

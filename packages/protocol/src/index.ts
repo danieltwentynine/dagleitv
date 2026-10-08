@@ -11,15 +11,26 @@ export type JoinResult =
   | { ok: true; /** true if a peer is already in the room (we are the polite peer). */ peerPresent: boolean }
   | { ok: false; error: "room-full" | "invalid-room" };
 
+/** Text chat limits, enforced by the server and mirrored in the UI. */
+export const CHAT_MAX_LENGTH = 500;
+
+export interface ChatMessage {
+  text: string;
+  /** Server receive time, ms since epoch. */
+  ts: number;
+}
+
 export interface ClientToServerEvents {
   join: (roomId: string, ack: (result: JoinResult) => void) => void;
   signal: (msg: SignalMessage) => void;
+  chat: (text: string) => void;
 }
 
 export interface ServerToClientEvents {
   "peer-joined": () => void;
   "peer-left": () => void;
   signal: (msg: SignalMessage) => void;
+  chat: (msg: ChatMessage) => void;
 }
 
 /** Room codes: 8+ chars, URL-safe. */

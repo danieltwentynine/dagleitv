@@ -7,20 +7,19 @@ import {
   SocketSignaling,
   captureDisplay,
   captureFake,
-  describeCapture,
   fetchIceServers,
   getConnectionSnapshot,
-  throughputBetween,
+  signalQuality,
   type ConnectionPhase,
   type ConnectionSnapshot,
-  type Throughput,
+  type SignalQuality,
 } from "@dagleitv/rtc-core";
 import { CloseIcon } from "../../icons";
 import { EnterRoom } from "./EnterRoom";
 import { LeaveDialog } from "./LeaveDialog";
 import { TopBar } from "./TopBar";
 import { Stage } from "./Stage";
-import { StatsDrawer } from "./StatsDrawer";
+import { ChatDrawer, type ChatLine } from "./ChatDrawer";
 import { useVoice } from "./useVoice";
 import styles from "./room.module.css";
 
@@ -54,11 +53,13 @@ export function Room({ roomId }: { roomId: string }) {
   const [remoteSharing, setRemoteSharing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [needsPlayClick, setNeedsPlayClick] = useState(false);
-  const [diag, setDiag] = useState<unknown>(null);
   const [forceRelay, setForceRelay] = useState(false);
-  const [turnAvailable, setTurnAvailable] = useState<boolean | null>(null);
-  const [net, setNet] = useState<{ snap: ConnectionSnapshot; rate: Throughput | null } | null>(null);
-  const [statsOpen, setStatsOpen] = useState(false);
+  const [snap, setSnap] = useState<ConnectionSnapshot | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chat, setChat] = useState<ChatLine[]>([]);
+  const [unread, setUnread] = useState(0);
+  const chatOpenRef = useRef(false);
+  const chatId = useRef(0);
   const [toast, setToast] = useState<string | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
 
@@ -66,24 +67,29 @@ export function Room({ roomId }: { roomId: string }) {
     setForceRelay(new URLSearchParams(window.location.search).has("relay"));
   }, []);
 
-  // M2: poll the selected candidate pair once a second while connected.
+  // Poll the selected candidate pair once a second while connected; the RTT
+  // feeds the signal indicator.
   useEffect(() => {
     if (phase !== "connected") {
-      setNet(null);
+      setSnap(null);
       return;
     }
-    let prev: ConnectionSnapshot | null = null;
     const tick = async () => {
       const pc = sessionRef.current?.peerConnection;
-      const snap = pc ? await getConnectionSnapshot(pc) : null;
-      if (!snap) return;
-      setNet({ snap, rate: prev ? throughputBetween(prev, snap) : null });
-      prev = snap;
+      const next = pc ? await getConnectionSnapshot(pc) : null;
+      if (next) setSnap(next);
     };
     void tick();
     const id = setInterval(() => void tick(), 1000);
     return () => clearInterval(id);
   }, [phase]);
+
+  const signal: SignalQuality | null =
+    phase === "connected"
+      ? signalQuality(true, snap)
+      : phase === "disconnected" || phase === "failed"
+        ? "offline"
+        : null;
 
   useEffect(
     () => () => {
@@ -154,14 +160,16 @@ export function Room({ roomId }: { roomId: string }) {
       signaling: new SocketSignaling(SIGNALING_URL),
       iceTransportPolicy: forceRelay ? "relay" : "all",
       iceServers: async () => {
-        const ice = await fetchIceServers(SIGNALING_URL, roomId);
-        setTurnAvailable(ice.turn);
-        return ice.iceServers;
+        return (await fetchIceServers(SIGNALING_URL, roomId)).iceServers;
       },
       events: {
         ...voiceEvents,
         onPhase: (p) => {
           if (sessionRef.current === session) setPhase(p);
+        },
+        onChat: (msg) => {
+          setChat((c) => [...c, { id: chatId.current++, from: "partner", text: msg.text, ts: msg.ts }]);
+          if (!chatOpenRef.current) setUnread((n) => n + 1);
         },
         onRemoteSharing: setRemoteSharing,
         onLocalShareEnded: () => setSharing(false),
@@ -208,7 +216,6 @@ export function Room({ roomId }: { roomId: string }) {
     try {
       const fake = new URLSearchParams(window.location.search).has("fake");
       const stream = fake ? captureFake() : await captureDisplay();
-      setDiag(describeCapture(stream));
       session.startSharing(stream);
       setSharing(true);
     } catch (e) {
@@ -223,18 +230,17 @@ export function Room({ roomId }: { roomId: string }) {
     setSharing(false);
   }, []);
 
-  const netText = [
-    `TURN credentials: ${turnAvailable === null ? "n/a" : turnAvailable ? "yes" : "no (STUN only)"}`,
-    `policy: ${forceRelay ? "relay only" : "all"}`,
-    ...(net
-      ? [
-          `pair: ${net.snap.pair} ${net.snap.relayed ? "(RELAYED)" : "(direct)"} ${net.snap.protocol ?? ""}`,
-          `rtt: ${net.snap.rttMs?.toFixed(0) ?? "?"} ms`,
-          `send: ${net.rate?.sendKbps.toFixed(0) ?? "?"} kbps, recv: ${net.rate?.recvKbps.toFixed(0) ?? "?"} kbps`,
-          `est. available outgoing: ${net.snap.availableOutgoingKbps?.toFixed(0) ?? "?"} kbps`,
-        ]
-      : ["pair: (not connected)"]),
-  ].join("\n");
+  const toggleChat = useCallback(() => {
+    const next = !chatOpenRef.current;
+    chatOpenRef.current = next;
+    setChatOpen(next);
+    if (next) setUnread(0);
+  }, []);
+
+  const sendChat = useCallback((text: string) => {
+    sessionRef.current?.sendChat(text);
+    setChat((c) => [...c, { id: chatId.current++, from: "me", text, ts: Date.now() }]);
+  }, []);
 
   // Always mounted so the partner's voice can attach as soon as it arrives.
   const voiceAudio = <audio ref={voice.audioRef} data-testid="remote-voice" autoPlay hidden />;
@@ -267,7 +273,9 @@ export function Room({ roomId }: { roomId: string }) {
         remoteVoiceState={voice.remoteVoiceState}
         remoteSpeaking={voice.remoteSpeaking}
         onCopyLink={copyLink}
-        onToggleStats={() => setStatsOpen((o) => !o)}
+        signal={signal}
+        unreadChat={unread}
+        onToggleChat={toggleChat}
         onLeave={requestLeave}
       />
       {error && (
@@ -304,7 +312,13 @@ export function Room({ roomId }: { roomId: string }) {
         onStay={() => setLeaveOpen(false)}
         onLeave={leave}
       />
-      <StatsDrawer open={statsOpen} onClose={() => setStatsOpen(false)} netText={netText} diag={diag} />
+      <ChatDrawer
+        open={chatOpen}
+        onClose={toggleChat}
+        messages={chat}
+        canSend={phase === "connected"}
+        onSend={sendChat}
+      />
       {toast && <div className={styles.toast} role="status">{toast}</div>}
     </main>
   );

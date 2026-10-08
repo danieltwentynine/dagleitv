@@ -86,10 +86,19 @@ try {
   await shot(b, "5-watching");
   await shot(a, "6-sharing");
 
-  await b.getByRole("button", { name: "Connection stats" }).click();
-  assert(/RELAYED/.test(await b.getByTestId("net").innerText()), "stats drawer shows relayed pair");
-  await shot(b, "7-stats");
-  await b.getByRole("button", { name: "Close stats" }).click();
+  assert((await b.getByTestId("signal").getAttribute("data-quality")) === "good", "signal indicator shows Good");
+
+  await b.getByTestId("chat-toggle").click();
+  await b.getByTestId("chat-input").fill("hello from B");
+  await b.getByTestId("chat-input").press("Enter");
+  await a.getByTestId("chat-unread").waitFor({ timeout: 5000 });
+  assert(true, "A gets an unread badge for B's message");
+  await a.getByTestId("chat-toggle").click();
+  await a.getByTestId("chat-list").getByText("hello from B").waitFor();
+  assert(await b.getByTestId("chat-list").getByText("hello from B").count() === 1, "B sees own message once");
+  await shot(a, "7-chat");
+  await a.getByRole("button", { name: "Close chat" }).click();
+  await b.getByRole("button", { name: "Close chat" }).click();
 
   await b.getByRole("button", { name: "Mute movie" }).click();
   assert(await b.evaluate(() => document.querySelector("video").muted), "movie mute mutes the video");

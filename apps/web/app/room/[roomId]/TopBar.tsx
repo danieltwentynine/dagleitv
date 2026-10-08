@@ -1,5 +1,5 @@
-import type { ConnectionPhase, VoiceState } from "@dagleitv/rtc-core";
-import { LeaveIcon, LinkIcon, MicIcon, MicOffIcon, StatsIcon, TvIcon } from "../../icons";
+import type { ConnectionPhase, SignalQuality, VoiceState } from "@dagleitv/rtc-core";
+import { LeaveIcon, LinkIcon, MicIcon, MicOffIcon, TvIcon, ChatIcon } from "../../icons";
 import { ThemeToggle } from "../../ThemeToggle";
 import styles from "./room.module.css";
 
@@ -21,6 +21,8 @@ const PHASE_LABEL: Record<ConnectionPhase, { label: string; tone: Tone }> = {
   closed: { label: "Left room", tone: "neutral" },
 };
 
+const SIGNAL_LABEL: Record<SignalQuality, string> = { good: "Good", weak: "Weak", offline: "Offline" };
+
 interface TopBarProps {
   roomId: string;
   phase: ConnectionPhase;
@@ -28,12 +30,14 @@ interface TopBarProps {
   remoteVoiceState: VoiceState;
   remoteSpeaking: boolean;
   onCopyLink(): void;
-  onToggleStats(): void;
+  signal: SignalQuality | null;
+  unreadChat: number;
+  onToggleChat(): void;
   onLeave(): void;
 }
 
 export function TopBar(props: TopBarProps) {
-  const { roomId, phase, remoteSharing, remoteVoiceState, remoteSpeaking, onCopyLink, onToggleStats, onLeave } = props;
+  const { roomId, phase, remoteSharing, remoteVoiceState, remoteSpeaking, signal, unreadChat, onCopyLink, onToggleChat, onLeave } = props;
   const { label, tone } = PHASE_LABEL[phase];
   return (
     <header className={styles.topBar}>
@@ -61,6 +65,16 @@ export function TopBar(props: TopBarProps) {
           <span className={styles.hideNarrow}>{PARTNER_MIC_LABEL[remoteVoiceState]}</span>
         </span>
       )}
+      {signal && (
+        <span className={styles.signal} data-quality={signal} data-testid="signal" title={`Connection: ${SIGNAL_LABEL[signal]}`}>
+          <span className={styles.signalBars} aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className={styles.hideNarrow}>{SIGNAL_LABEL[signal]}</span>
+        </span>
+      )}
       <span className={styles.partnerSharing} data-testid="remote-sharing">
         {remoteSharing ? "Partner is sharing" : ""}
       </span>
@@ -69,8 +83,16 @@ export function TopBar(props: TopBarProps) {
         <LinkIcon size={16} />
         <span className={styles.hideNarrow}>Copy link</span>
       </button>
-      <button className="btn btn-ghost btn-icon" onClick={onToggleStats} aria-label="Connection stats" title="Connection stats">
-        <StatsIcon />
+      <button
+        className="btn btn-ghost btn-icon"
+        style={{ position: "relative" }}
+        onClick={onToggleChat}
+        aria-label="Chat"
+        title="Chat"
+        data-testid="chat-toggle"
+      >
+        <ChatIcon />
+        {unreadChat > 0 && <span className={styles.badge} data-testid="chat-unread">{unreadChat > 9 ? "9+" : unreadChat}</span>}
       </button>
       <ThemeToggle />
       <button className="btn btn-danger" onClick={onLeave} data-testid="leave">

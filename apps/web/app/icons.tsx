@@ -111,3 +111,7 @@ export const RefreshIcon = icon(
 );
 
 export const ArrowRightIcon = icon(<path d="M5 12h14M13 6l6 6-6 6" />);
+
+export const ChatIcon = icon(<path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />);
+
+export const SendIcon = icon(<path d="m22 2-7 20-4-9-9-4zM22 2 11 13" />);

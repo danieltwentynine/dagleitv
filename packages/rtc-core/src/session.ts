@@ -1,4 +1,4 @@
-import type { JoinResult, SignalMessage } from "@dagleitv/protocol";
+import type { ChatMessage, JoinResult, SignalMessage } from "@dagleitv/protocol";
 import { TRANSCEIVER_ORDER } from "./layout";
 import { FALLBACK_ICE_SERVERS } from "./ice";
 import type { SignalingChannel } from "./signaling";
@@ -24,6 +24,7 @@ export interface SessionEvents {
   onRemoteVoiceState?(state: VoiceState): void;
   /** The local mic track ended on its own (e.g. device unplugged). */
   onLocalVoiceEnded?(): void;
+  onChat?(msg: ChatMessage): void;
   onError?(error: Error): void;
 }
 
@@ -98,6 +99,7 @@ export class PeerSession {
         this.teardownPeer();
         this.setPhase("waiting-for-peer");
       },
+      onChat: (msg) => this.events.onChat?.(msg),
       onDisconnect: () => {
         if (!this.closed) this.setPhase("disconnected");
       },
@@ -182,6 +184,10 @@ export class PeerSession {
     track.stop();
     this.applyLocalVoice();
     this.sendVoiceState();
+  }
+
+  sendChat(text: string): void {
+    this.signaling.sendChat(text);
   }
 
   close(): void {
