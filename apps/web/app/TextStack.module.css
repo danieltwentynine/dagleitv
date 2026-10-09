@@ -1,0 +1,36 @@
+.stack {
+  display: grid;
+  gap: 0;
+  max-width: 720px;
+  border-top: var(--stroke-1) solid var(--line-strong);
+}
+
+.stack > h2 {
+  margin: 0;
+  padding: var(--space-3) 0;
+  color: var(--ink-dim);
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  border-top: var(--stroke-1) solid var(--line);
+}
+
+.label {
+  color: var(--brand);
+}
+
+.body {
+  margin: 0;
+  color: var(--ink-dim);
+}
+
+@media (max-width: 640px) {
+  .item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+}

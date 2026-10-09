@@ -8,7 +8,23 @@ import { PlayIcon } from "./icons";
 import { parseRoomCode, randomRoomCode } from "./roomCode";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
+import { TextStack, type TextStackItem } from "./TextStack";
 import styles from "./page.module.css";
+
+const about: TextStackItem[] = [
+  {
+    label: "bio",
+    body: "Daglei TV is a small private app for two people who watch movies together from far apart. One of you shares a screen with system audio, and the other watches it live, browser to browser. No accounts, no database, no media server.",
+  },
+  {
+    label: "showcase",
+    body: "Create a room, send the link, share your entire screen with \u201cShare system audio\u201d ticked, and press play. Voice chat and quality presets are planned.",
+  },
+  {
+    label: "status",
+    body: "Early build. Screen sharing works between two browser windows in automated tests. It has not yet been tested with real screens, real audio, streaming sites or two different networks.",
+  },
+];
 
 export default function Home() {
   const router = useRouter();
@@ -108,6 +124,10 @@ export default function Home() {
             <span className="t-label brand">Honest note</span>
             <span>Works in Chrome or Edge on Windows. Two people only. Rooms are gone when you both leave.</span>
           </div>
+        </div>
+
+        <div className={styles.about}>
+          <TextStack title="About" items={about} />
         </div>
       </main>
 

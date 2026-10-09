@@ -1,3 +1,7 @@
+.about {
+  grid-column: 1 / -1;
+}
+
 .land {
   display: grid;
   grid-template-rows: 88px 1fr 64px;
