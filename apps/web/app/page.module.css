@@ -43,7 +43,9 @@
 .title {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(88px, 7.1vw, 136px);
+  /* "1000 KM APART." has to fit one column with room to spare: at 7.1vw/136px it was
+     within a pixel of wrapping, and browsers disagree on which side of that they land. */
+  font-size: clamp(88px, 6.2vw, 120px);
   line-height: 1.03;
 }
 

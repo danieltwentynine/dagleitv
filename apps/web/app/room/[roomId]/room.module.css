@@ -9,6 +9,18 @@
   min-height: 0;
 }
 
+/* Gate screens (waiting, connecting...) are text on the stage, so before there is
+   video the stage follows the theme; the black letterbox only matters while watching. */
+.stage:not([data-live="true"]) {
+  background: var(--void);
+}
+
+.stage:not([data-live="true"]) :global(.vframe) {
+  --fill: transparent;
+  --bd: transparent;
+  background: transparent;
+}
+
 .stage[data-hide-chrome="true"] {
   cursor: none;
 }
@@ -123,10 +135,13 @@
 .lobby {
   position: relative;
   height: 100dvh;
-  background: var(--stage);
+  /* Text sits straight on this, so it follows the theme (--stage is black in paper too). */
+  background: var(--void);
 }
 
 .lobbyBrand {
+  /* Above the full-screen .gate, which would otherwise swallow clicks on the theme toggle. */
+  z-index: var(--z-chrome);
   position: absolute;
   top: 0;
   left: 0;
