@@ -3,7 +3,10 @@ import { useRouter } from "next/navigation";
 import { Ascii } from "../../AsciiArt";
 import { LOBBY_ART, NO_SIGNAL, OFFLINE_ART, ROOM_FULL } from "../../ascii";
 import { LinkIcon, PlayIcon, RetryIcon, WarnIcon } from "../../icons";
+import { NO_AUDIO_MESSAGE, NO_SHARE_MESSAGE } from "../../browserSupport";
 import { Logo } from "../../Logo";
+import { RotatePrompt } from "../../RotatePrompt";
+import { useBrowserSupport } from "../../useBrowserSupport";
 import { parseRoomCode, randomRoomCode } from "../../roomCode";
 import { ThemeToggle } from "../../ThemeToggle";
 import styles from "./room.module.css";
@@ -27,9 +30,12 @@ export function EnterRoom(props: EnterRoomProps) {
   const { roomId, forceRelay, onForceRelayChange, onJoin, onCopyLink, joining, error, failure } = props;
   const router = useRouter();
   const newRoom = () => router.push(`/room/${randomRoomCode()}`);
+  const support = useBrowserSupport()?.support;
+  const notice = support === "none" ? NO_SHARE_MESSAGE : support === "no-audio" ? NO_AUDIO_MESSAGE : null;
 
   return (
     <main className={styles.lobby}>
+      <RotatePrompt />
       <header className={styles.lobbyBrand}>
         <Logo />
         <span className={styles.lobbyRight}>
@@ -89,6 +95,13 @@ export function EnterRoom(props: EnterRoomProps) {
             </button>
           </div>
           <span className="t-meta mute">2 seats &middot; no accounts</span>
+
+          {notice && (
+            <div className="banner banner-warn cut" role="note" data-testid="browser-notice">
+              <WarnIcon />
+              <span className="msg-t">{notice}</span>
+            </div>
+          )}
 
           {error && (
             <div className="banner banner-warn cut" role="alert">

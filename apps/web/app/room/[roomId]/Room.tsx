@@ -14,7 +14,10 @@ import {
   type ConnectionSnapshot,
   type SignalQuality,
 } from "@dagleitv/rtc-core";
+import { currentShareSupport, NO_SHARE_MESSAGE } from "../../browserSupport";
 import { CloseIcon, StopIcon, WarnIcon } from "../../icons";
+import { RotatePrompt } from "../../RotatePrompt";
+import { useBrowserSupport } from "../../useBrowserSupport";
 import { EnterRoom, type JoinFailure } from "./EnterRoom";
 import { LeaveDialog } from "./LeaveDialog";
 import { TopBar } from "./TopBar";
@@ -67,6 +70,8 @@ export function Room({ roomId }: { roomId: string }) {
   const lastPartnerChat = useMemo(() => [...chat].reverse().find((m) => m.from === "partner") ?? null, [chat]);
   const [toast, setToast] = useState<string | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  // Stays enabled until detection runs (and with ?fake, which needs no real capture).
+  const canShare = useBrowserSupport()?.support !== "none" || new URLSearchParams(globalThis.location?.search).has("fake");
 
   useEffect(() => {
     setForceRelay(new URLSearchParams(window.location.search).has("relay"));
@@ -218,6 +223,10 @@ export function Room({ roomId }: { roomId: string }) {
     if (!session) return;
     try {
       const fake = new URLSearchParams(window.location.search).has("fake");
+      if (!fake && currentShareSupport().support === "none") {
+        setError(NO_SHARE_MESSAGE);
+        return;
+      }
       const stream = fake ? captureFake() : await captureDisplay();
       session.startSharing(stream);
       setShareHasAudio(stream.getAudioTracks().length > 0);
@@ -306,7 +315,9 @@ export function Room({ roomId }: { roomId: string }) {
   return (
     <div className={`room${chatOpen ? "" : " nochat"} ${styles.shell}`}>
       {voiceAudio}
+      <RotatePrompt />
       <Stage
+        canShare={canShare}
         topBar={topBar}
         videoRef={videoRef}
         roomId={roomId}

@@ -65,6 +65,8 @@ interface StageProps {
   onPlayClick(): void;
   onPlaying(): void;
   onShare(): void;
+  /** False on devices that can't capture a screen (phones); they watch and chat only. */
+  canShare: boolean;
   onStopShare(): void;
   onCopyLink(): void;
   onReconnect(): void;
@@ -232,8 +234,8 @@ export function Stage(props: StageProps) {
             data-testid="share"
             className="btn btn-primary cut"
             onClick={props.onShare}
-            disabled={props.remoteSharing}
-            title={props.remoteSharing ? "Partner is sharing" : undefined}
+            disabled={props.remoteSharing || !props.canShare}
+            title={!props.canShare ? "This device can't share its screen" : props.remoteSharing ? "Partner is sharing" : undefined}
           >
             <ScreenShareIcon /> Share my screen
           </button>
@@ -391,16 +393,18 @@ function gateFor(p: StageProps): GateContent | null {
       return {
         art: <Ascii text={TV_IDLE} size="l" />,
         title: "Nobody is sharing",
-        body: (
+        body: p.canShare ? (
           <>
             Pick your movie window, share your <b>entire screen</b>, and tick <b>Share system audio</b> so they can hear it.
           </>
+        ) : (
+          "This device can only watch. When your partner shares, it shows up here."
         ),
-        action: (
+        action: p.canShare ? (
           <button className="btn btn-primary btn-lg cut" onClick={p.onShare}>
             <ScreenShareIcon /> Share my screen
           </button>
-        ),
+        ) : undefined,
       };
     case "closed":
       return { title: "You left the room", body: "Reload the page to join again." };
