@@ -66,9 +66,10 @@ const httpServer = createServer((req, res) => {
   res.writeHead(404).end();
 });
 
-// TURN credentials cost money per GB, so only hand them to someone who is
-// (a) under the rate limit and (b) naming a room that already has a live peer
-// in it. The caller must join the room first (see PeerSession.start).
+// TURN credentials cost money per GB. The rate limit and the live-room check
+// only stop casual misuse: a script can join any made-up room and then ask.
+// The real cap is the short TTL (ice.ts) plus a usage alert in Cloudflare.
+// The caller must join the room first (see PeerSession.start).
 async function handleIce(req: IncomingMessage, res: ServerResponse, url: URL) {
   const fail = (status: number, error: IceErrorCode) => sendJson(req, res, status, { error });
   if (!iceAllowed(clientIp(req))) return fail(429, "rate-limited");
@@ -92,14 +93,14 @@ io.on("connection", (socket) => {
       ack({ ok: false, error: "invalid-room" });
       return;
     }
-    const existing = await io.in(requestedRoom).fetchSockets();
-    if (existing.length >= MAX_PEERS_PER_ROOM) {
+    const existing = io.sockets.adapter.rooms.get(requestedRoom)?.size ?? 0;
+    if (existing >= MAX_PEERS_PER_ROOM) {
       ack({ ok: false, error: "room-full" });
       return;
     }
     roomId = requestedRoom;
     await socket.join(requestedRoom);
-    ack({ ok: true, peerPresent: existing.length > 0 });
+    ack({ ok: true, peerPresent: existing > 0 });
     socket.to(requestedRoom).emit("peer-joined");
   });
 
@@ -111,15 +112,17 @@ io.on("connection", (socket) => {
   // Text chat: relayed to the other peer only (the sender shows its own copy).
   // Per-socket limit of 5 messages per 3 seconds.
   let chatTimes: number[] = [];
-  socket.on("chat", (text) => {
-    if (!roomId || typeof text !== "string") return;
+  socket.on("chat", (text, ack) => {
+    const reply = typeof ack === "function" ? ack : () => {};
+    if (!roomId || typeof text !== "string") return reply(false);
     const trimmed = text.trim().slice(0, CHAT_MAX_LENGTH);
-    if (!trimmed) return;
+    if (!trimmed) return reply(false);
     const now = Date.now();
     chatTimes = chatTimes.filter((t) => now - t < 3000);
-    if (chatTimes.length >= 5) return;
+    if (chatTimes.length >= 5) return reply(false);
     chatTimes.push(now);
     socket.to(roomId).emit("chat", { text: trimmed, ts: now });
+    reply(true);
   });
 
   socket.on("disconnect", () => {

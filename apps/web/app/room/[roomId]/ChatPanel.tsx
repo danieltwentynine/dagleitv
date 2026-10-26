@@ -12,7 +12,8 @@ interface ChatPanelProps {
   onHide(): void;
   messages: ChatLine[];
   canSend: boolean;
-  onSend(text: string): void;
+  /** Resolves false if the message was not sent. */
+  onSend(text: string): Promise<boolean>;
 }
 
 const timeFormat = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
@@ -34,8 +35,11 @@ export function ChatPanel({ onHide, messages, canSend, onSend }: ChatPanelProps)
     e?.preventDefault();
     const text = draft.trim();
     if (!text || !canSend) return;
-    onSend(text);
     setDraft("");
+    // Put the text back if it didn't go out, unless they've started a new one.
+    void onSend(text).then((sent) => {
+      if (!sent) setDraft((d) => d || text);
+    });
   };
 
   // Enter sends, Shift+Enter adds a line.

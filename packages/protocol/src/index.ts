@@ -23,7 +23,8 @@ export interface ChatMessage {
 export interface ClientToServerEvents {
   join: (roomId: string, ack: (result: JoinResult) => void) => void;
   signal: (msg: SignalMessage) => void;
-  chat: (text: string) => void;
+  /** Ack is true if relayed, false if dropped (empty or rate-limited). */
+  chat: (text: string, ack: (sent: boolean) => void) => void;
 }
 
 export interface ServerToClientEvents {

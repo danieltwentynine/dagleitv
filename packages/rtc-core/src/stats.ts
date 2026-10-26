@@ -70,11 +70,9 @@ export type SignalQuality = "good" | "weak" | "offline";
 const WEAK_RTT_MS = 250;
 
 /**
- * Collapses connection state into one human label. `offline` means no working
- * link to the partner; `weak` means connected but slow enough to hurt calls.
+ * Label for a live connection: `weak` means slow enough to hurt calls.
+ * `offline` (no working link) is decided by the caller from the phase.
  */
-export function signalQuality(connected: boolean, snap: ConnectionSnapshot | null): SignalQuality {
-  if (!connected) return "offline";
-  if (snap?.rttMs != null && snap.rttMs > WEAK_RTT_MS) return "weak";
-  return "good";
+export function signalQuality(snap: ConnectionSnapshot): SignalQuality {
+  return snap.rttMs != null && snap.rttMs > WEAK_RTT_MS ? "weak" : "good";
 }

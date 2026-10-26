@@ -5,8 +5,12 @@ const STUN_ONLY: IceServersResponse = {
   turn: false,
 };
 
-/** Credential lifetime requested from Cloudflare. Reused until half is left. */
-const TTL_SECONDS = 6 * 60 * 60;
+/**
+ * Credential lifetime requested from Cloudflare. Reused until half is left.
+ * Kept short because one set is shared by every caller, so a leaked set is
+ * usable by anyone until it expires.
+ */
+const TTL_SECONDS = 60 * 60;
 
 interface Cached {
   value: IceServersResponse;

@@ -11,7 +11,6 @@ import {
   getConnectionSnapshot,
   signalQuality,
   type ConnectionPhase,
-  type ConnectionSnapshot,
   type SignalQuality,
 } from "@dagleitv/rtc-core";
 import { currentShareSupport, NO_SHARE_MESSAGE } from "../../browserSupport";
@@ -60,7 +59,7 @@ export function Room({ roomId }: { roomId: string }) {
   const [sharing, setSharing] = useState(false);
   const [needsPlayClick, setNeedsPlayClick] = useState(false);
   const [forceRelay, setForceRelay] = useState(false);
-  const [snap, setSnap] = useState<ConnectionSnapshot | null>(null);
+  const [quality, setQuality] = useState<SignalQuality>("good");
   const [chatOpen, setChatOpen] = useState(true);
   const [helpOpen, setHelpOpen] = useState(false);
   const [chat, setChat] = useState<ChatLine[]>([]);
@@ -81,13 +80,14 @@ export function Room({ roomId }: { roomId: string }) {
   // feeds the signal indicator.
   useEffect(() => {
     if (phase !== "connected") {
-      setSnap(null);
+      setQuality("good");
       return;
     }
+    // Only the label goes into state, so a steady link doesn't re-render the room.
     const tick = async () => {
       const pc = sessionRef.current?.peerConnection;
       const next = pc ? await getConnectionSnapshot(pc) : null;
-      if (next) setSnap(next);
+      if (next) setQuality(signalQuality(next));
     };
     void tick();
     const id = setInterval(() => void tick(), 1000);
@@ -96,7 +96,7 @@ export function Room({ roomId }: { roomId: string }) {
 
   const signal: SignalQuality | null =
     phase === "connected"
-      ? signalQuality(true, snap)
+      ? quality
       : phase === "disconnected" || phase === "failed"
         ? "offline"
         : null;
@@ -171,9 +171,7 @@ export function Room({ roomId }: { roomId: string }) {
     const session = new PeerSession({
       signaling: new SocketSignaling(SIGNALING_URL),
       iceTransportPolicy: forceRelay ? "relay" : "all",
-      iceServers: async () => {
-        return (await fetchIceServers(SIGNALING_URL, roomId)).iceServers;
-      },
+      iceServers: () => fetchIceServers(SIGNALING_URL, roomId),
       events: {
         ...voiceEvents,
         onPhase: (p) => {
@@ -266,10 +264,16 @@ export function Room({ roomId }: { roomId: string }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [toggleChat]);
 
-  const sendChat = useCallback((text: string) => {
-    sessionRef.current?.sendChat(text);
-    setChat((c) => [...c, { id: chatId.current++, from: "me", text, ts: Date.now() }]);
-  }, []);
+  /** Shows the message only once the server relayed it. */
+  const sendChat = useCallback(
+    async (text: string) => {
+      const sent = (await sessionRef.current?.sendChat(text)) ?? false;
+      if (sent) setChat((c) => [...c, { id: chatId.current++, from: "me", text, ts: Date.now() }]);
+      else showToast("Message not sent. Slow down a little.");
+      return sent;
+    },
+    [showToast],
+  );
 
   // Always mounted so the partner's voice can attach as soon as it arrives.
   const voiceAudio = <audio ref={voice.audioRef} data-testid="remote-voice" autoPlay hidden />;

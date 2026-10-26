@@ -103,6 +103,17 @@ export class PeerSession {
       onDisconnect: () => {
         if (!this.closed) this.setPhase("disconnected");
       },
+      // The server told the partner we left, so they dropped the call. If they
+      // are still there they get peer-joined now and send a fresh offer.
+      // shortcut: room-full here means the server hasn't noticed our old socket
+      // is dead yet (up to ~45 s); we show "failed" and the Reconnect button works.
+      onRejoined: (result) => {
+        if (!result.ok) this.setPhase("failed");
+        else if (!result.peerPresent) {
+          this.teardownPeer();
+          this.setPhase("waiting-for-peer");
+        }
+      },
     });
     // Signals can arrive as soon as we join, so the gate must exist before that.
     let release!: () => void;
@@ -186,8 +197,8 @@ export class PeerSession {
     this.sendVoiceState();
   }
 
-  sendChat(text: string): void {
-    this.signaling.sendChat(text);
+  sendChat(text: string): Promise<boolean> {
+    return this.signaling.sendChat(text);
   }
 
   close(): void {

@@ -1,7 +1,7 @@
 /**
  * Screen capture. Constraint choices (system audio on, processing off) are
  * my best understanding of Chrome behavior and are the thing the M1 spike
- * is meant to confirm on real machines; see describeCapture().
+ * is meant to confirm on real machines.
  */
 export async function captureDisplay(): Promise<MediaStream> {
   // systemAudio / selfBrowserSurface aren't in every lib.dom version.
@@ -81,20 +81,3 @@ export function captureFake(): MediaStream {
   return stream;
 }
 
-/** Facts the M1 spike needs: did we get system audio, what did we really get. */
-export function describeCapture(stream: MediaStream) {
-  const supported = navigator.mediaDevices.getSupportedConstraints() as Record<string, unknown>;
-  const video = stream.getVideoTracks()[0];
-  return {
-    videoLabel: video?.label,
-    videoSettings: video?.getSettings(),
-    audioTrackCount: stream.getAudioTracks().length,
-    audio: stream.getAudioTracks().map((t) => ({ label: t.label, settings: t.getSettings() })),
-    supportedConstraints: {
-      systemAudio: supported["systemAudio"],
-      suppressLocalAudioPlayback: supported["suppressLocalAudioPlayback"],
-      restrictOwnAudio: supported["restrictOwnAudio"],
-      displaySurface: supported["displaySurface"],
-    },
-  };
-}
