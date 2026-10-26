@@ -2,6 +2,9 @@
   display: grid;
   grid-template-rows: 88px 1fr 64px;
   min-height: 100vh;
+  /* Caps the canvas on 1920+ screens so the columns don't drift apart. */
+  max-width: 1600px;
+  margin: 0 auto;
   padding: 0 clamp(var(--space-6), 5vw, var(--space-9));
   background: var(--void);
 }
@@ -45,7 +48,7 @@
   color: var(--ink);
   /* "1000 KM APART." has to fit one column with room to spare: at 7.1vw/136px it was
      within a pixel of wrapping, and browsers disagree on which side of that they land. */
-  font-size: clamp(88px, 6.2vw, 120px);
+  font-size: clamp(88px, 6.2vw, 104px);
   line-height: 1.03;
 }
 
@@ -95,14 +98,17 @@
   position: absolute;
   top: -8px;
   left: 0;
+  max-width: 100%;
+  overflow: hidden;
   margin: 0;
   color: var(--ink-mute);
 }
 
 .hero {
   margin: var(--space-6) 0 var(--space-7);
-  font-size: 18px;
-  line-height: 21px;
+  /* 71-char-wide art: scale with the column so it never clips. */
+  font-size: min(15px, 0.95vw);
+  line-height: 1.17;
   overflow: hidden;
 }
 
@@ -133,6 +139,7 @@
 }
 
 .n {
+  flex-shrink: 0;
   width: 48px;
   color: var(--brand);
   font-family: var(--font-display);
@@ -159,9 +166,72 @@
   font-size: 12px;
 }
 
-@media (max-width: 1500px) {
+/* Tablet and phones in landscape: one column. */
+@media (max-width: 1024px) {
+  .land {
+    grid-template-rows: 72px 1fr 56px;
+  }
+
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-7);
+    padding: var(--space-7) 0 var(--space-6);
+  }
+
+  .title {
+    font-size: clamp(56px, 9vw, 88px);
+  }
+
   .hero {
-    font-size: 14px;
-    line-height: 16px;
+    font-size: min(18px, 2vw);
+  }
+}
+
+/* Narrow phones (portrait after "continue anyway"), down to 320px. */
+@media (max-width: 640px) {
+  .land {
+    padding: 0 var(--space-4);
+  }
+
+  .headRight > :global(.t-label),
+  .eyebrow > :global(.t-label) {
+    display: none;
+  }
+
+  .main {
+    padding-top: var(--space-6);
+  }
+
+  .title {
+    font-size: clamp(44px, 14vw, 64px);
+  }
+
+  .actions,
+  .join {
+    width: 100%;
+  }
+
+  .actions > :global(.btn),
+  .join :global(.input) {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .or {
+    display: none;
+  }
+
+  .hero {
+    font-size: 2.1vw;
+  }
+
+  .led li {
+    gap: var(--space-3);
+  }
+
+  .foot {
+    gap: var(--space-3);
+    flex-wrap: wrap;
   }
 }

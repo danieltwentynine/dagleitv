@@ -7,6 +7,7 @@ import { LANDING_FRAMES, LANDING_STARS } from "./ascii";
 import { PlayIcon } from "./icons";
 import { parseRoomCode, randomRoomCode } from "./roomCode";
 import { Logo } from "./Logo";
+import { RotatePrompt } from "./RotatePrompt";
 import { ThemeToggle } from "./ThemeToggle";
 import styles from "./page.module.css";
 
@@ -115,6 +116,7 @@ export default function Home() {
         <span>daglei tv &mdash; built for two</span>
         <span>popcorn not included</span>
       </footer>
+      <RotatePrompt />
     </div>
   );
 }
