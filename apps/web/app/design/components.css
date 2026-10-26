@@ -97,7 +97,9 @@ a{color:var(--brand)}
 .chat{display:flex;flex-direction:column;background:var(--panel);border-left:var(--stroke-1) solid var(--line);min-height:0}
 .chat-h{display:flex;align-items:center;justify-content:space-between;height:var(--bar-h);padding:0 var(--space-4);border-bottom:var(--stroke-1) solid var(--line);flex:none}
 .chat-note{padding:var(--space-2) var(--space-4);border-bottom:var(--stroke-1) solid var(--line);color:var(--ink-mute);font-size:12px;line-height:16px;flex:none}
-.chat-l{flex:1;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:var(--space-3);padding:var(--space-4);min-height:0}
+.chat-l{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4);min-height:0}
+/* Bottom-anchors short chats; justify-content:flex-end would push overflow above the scroll origin. */
+.chat-l>:first-child{margin-top:auto}
 .msg{max-width:88%;display:flex;flex-direction:column;gap:2px}
 .msg .m{font-size:12px;line-height:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mute)}
 .msg .m b{font-weight:700;margin-right:var(--space-2)}

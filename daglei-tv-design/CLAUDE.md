@@ -4,7 +4,7 @@ This folder is the finished visual identity and hi-fi mockups for Daglei TV, a p
 
 ## Read first
 1. `BRAND.md` (rules, voice, tokens, the cut recipe) and `ROOM-SPEC.md` (room layout, states, shortcuts, accessibility).
-2. `tokens.json` is the source of truth; `tokens.css` is the compiled CSS custom properties (night theme default); `components.css` is the shared component CSS (`.cut`, `.btn`, `.input`, `.tag`, `.banner`, `.tip`, chat `.msg`, `.room` shell).
+2. `tokens.json` is the source of truth; `tokens.css` is the compiled CSS custom properties (night theme default); `components.css` is the shared component CSS, now maintained only in `apps/web/app/design/components.css` (`.cut`, `.btn`, `.input`, `.tag`, `.banner`, `.tip`, chat `.msg`, `.room` shell).
 
 ## Hard rules
 - Zero border-radius. Corners are cut with the `.cut` clip-path system (`--cut` 12px, `--cut-s` 6px). Flat fills only: no gradients, blur, shadows, glass, or emoji.
