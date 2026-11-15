@@ -55,7 +55,9 @@ export class SocketSignaling implements SignalingChannel {
       this.socket.once("connect_error", onError);
       this.socket.once("connect", () => {
         this.socket.off("connect_error", onError);
-        this.socket.emit("join", roomId, (result) => {
+        // Without the timeout a lost ack would leave the caller waiting forever.
+        this.socket.timeout(5000).emit("join", roomId, (err, result) => {
+          if (err) return reject(err);
           if (result.ok) this.roomId = roomId;
           resolve(result);
         });

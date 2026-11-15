@@ -38,6 +38,19 @@ test("API error or empty body -> STUN fallback", async () => {
   assert.equal((await createIceProvider(env).get()).turn, false);
 });
 
+test("mint failure reuses cached credentials only until they expire", async (t) => {
+  const start = Date.now();
+  t.mock.method(Date, "now", () => start);
+  stubFetch({ iceServers: [turn] });
+  const provider = createIceProvider(env);
+  await provider.get();
+  stubFetch({}, 500);
+  t.mock.method(Date, "now", () => start + 31 * 60_000);
+  assert.equal((await provider.get()).turn, true);
+  t.mock.method(Date, "now", () => start + 61 * 60_000);
+  assert.equal((await provider.get()).turn, false);
+});
+
 test("rate limiter allows `limit` calls per key per window", () => {
   const allow = createRateLimiter(2, 60_000);
   assert.deepEqual([allow("a"), allow("a"), allow("a"), allow("b")], [true, true, false, true]);

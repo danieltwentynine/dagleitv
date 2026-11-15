@@ -15,6 +15,7 @@ const TTL_SECONDS = 60 * 60;
 interface Cached {
   value: IceServersResponse;
   refreshAt: number;
+  expiresAt: number;
 }
 
 /**
@@ -50,6 +51,7 @@ export function createIceProvider(env: NodeJS.ProcessEnv = process.env) {
     cached = {
       value: { iceServers: list as IceServersResponse["iceServers"], turn: true },
       refreshAt: Date.now() + (TTL_SECONDS * 1000) / 2,
+      expiresAt: Date.now() + TTL_SECONDS * 1000,
     };
     return cached.value;
   };
@@ -64,7 +66,7 @@ export function createIceProvider(env: NodeJS.ProcessEnv = process.env) {
         return await inflight;
       } catch (err) {
         console.error("TURN credential mint failed, falling back to STUN:", (err as Error).message);
-        return cached?.value ?? STUN_ONLY;
+        return cached && Date.now() < cached.expiresAt ? cached.value : STUN_ONLY;
       }
     },
   };

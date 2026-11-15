@@ -211,6 +211,8 @@ export function Room({ roomId }: { roomId: string }) {
       setFailure("offline");
       session.close();
       sessionRef.current = null;
+      // Back to the lobby, which has the offline screen and its Retry button.
+      setJoined(false);
     } finally {
       setJoining(false);
     }

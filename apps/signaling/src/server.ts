@@ -31,10 +31,13 @@ const clientIp = (req: IncomingMessage): string => {
 };
 
 const ice = createIceProvider();
+// `|| default` so a non-numeric value doesn't become NaN and block everyone.
 const iceAllowed = createRateLimiter(
-  Number(process.env.ICE_RATE_LIMIT ?? 10),
-  Number(process.env.ICE_RATE_WINDOW_MS ?? 60_000),
+  Number(process.env.ICE_RATE_LIMIT) || 10,
+  Number(process.env.ICE_RATE_WINDOW_MS) || 60_000,
 );
+// Per socket. A full negotiation is a few dozen messages (offer, answer, ICE trickle).
+const signalAllowed = createRateLimiter(200, 10_000);
 
 const corsHeaders = (req: IncomingMessage): Record<string, string> => {
   const origin = req.headers.origin;
@@ -53,7 +56,14 @@ const sendJson = (req: IncomingMessage, res: ServerResponse, status: number, bod
 };
 
 const httpServer = createServer((req, res) => {
-  const url = new URL(req.url ?? "/", "http://localhost");
+  // A request target such as "//" makes URL throw; uncaught, that kills the process.
+  let url: URL;
+  try {
+    url = new URL(req.url ?? "/", "http://localhost");
+  } catch {
+    res.writeHead(400).end();
+    return;
+  }
   if (req.method === "GET" && url.pathname === "/health") {
     res.writeHead(200, { "content-type": "text/plain", ...corsHeaders(req) });
     res.end("ok");
@@ -82,6 +92,11 @@ async function handleIce(req: IncomingMessage, res: ServerResponse, url: URL) {
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: { origin: allowedOrigins },
   transports: ["websocket"],
+  // SDP is a few KB; the 1 MB default only helps someone abusing the relay.
+  maxHttpBufferSize: 64_000,
+  // `cors` only covers HTTP polling, so check the Origin of WebSocket upgrades
+  // here. No Origin means a non-browser client, which could forge one anyway.
+  allowRequest: (req, cb) => cb(null, !req.headers.origin || allowedOrigins.includes(req.headers.origin)),
 });
 
 io.on("connection", (socket) => {
@@ -106,7 +121,7 @@ io.on("connection", (socket) => {
 
   // Pure relay: forward to the other peer in the room, never inspect SDP.
   socket.on("signal", (msg) => {
-    if (roomId) socket.to(roomId).emit("signal", msg);
+    if (roomId && signalAllowed(socket.id)) socket.to(roomId).emit("signal", msg);
   });
 
   // Text chat: relayed to the other peer only (the sender shows its own copy).

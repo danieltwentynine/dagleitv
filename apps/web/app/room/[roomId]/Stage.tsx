@@ -322,7 +322,12 @@ export function Stage(props: StageProps) {
 }
 
 function gateFor(p: StageProps): GateContent | null {
-  const roomLabel = <span className="t-label dim">Room {p.roomId.toUpperCase()}</span>;
+  const roomLabel = (
+    <span className="t-label dim">
+      {/* Codes are case-sensitive, so the label's uppercase must not apply to them. */}
+      Room <span style={{ textTransform: "none" }}>{p.roomId}</span>
+    </span>
+  );
   if (p.phase === "disconnected" || p.phase === "failed") {
     return {
       art: <Ascii text={CONNECTION_LOST} size="l" />,
