@@ -141,7 +141,11 @@ export class PeerSession {
   startSharing(stream: MediaStream): void {
     this.stopSharing();
     this.localShare = stream;
-    stream.getVideoTracks()[0]?.addEventListener("ended", () => {
+    const video = stream.getVideoTracks()[0];
+    // Screen capture defaults to "detail" (sharp, low frame rate). For a movie,
+    // ask the encoder to keep the frame rate and give up resolution first.
+    if (video) video.contentHint = "motion";
+    video?.addEventListener("ended", () => {
       if (this.localShare === stream) {
         this.stopSharing();
         this.events.onLocalShareEnded?.();
