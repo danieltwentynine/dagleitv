@@ -64,7 +64,7 @@ try {
 
   await b.reload();
   await b.getByTestId("join").click();
-  await b.getByTestId("phase").filter({ hasText: "connected" }).waitFor({ timeout: 20000 });
+  await b.getByTestId("phase").filter({ hasText: /connected|partner is sharing/ }).waitFor({ timeout: 20000 });
   await partnerMic(b, "data-state", "live", "after B reloads, A's mic is re-attached on the new connection");
   await partnerMic(b, "data-speaking", "true", "B hears A again after the reload");
   await partnerMic(a, "data-state", "off", "A sees B's mic off after B's reload");

@@ -9,12 +9,16 @@ import type {
 
 export interface SignalingHandlers {
   onSignal(msg: SignalMessage): void;
-  onPeerJoined(): void;
+  /** `resume`: the partner's socket came back and they still have the call up. */
+  onPeerJoined(resume: boolean): void;
   onPeerLeft(): void;
   onChat?(msg: ChatMessage): void;
   onDisconnect?(): void;
   /** The socket came back after a drop and joined the room again. */
-  onRejoined?(result: JoinResult): void;
+  /** Asked when the socket reconnects: is the call still up, so the partner should keep it? */
+  canResume?(): boolean;
+  /** `resumed` is what canResume answered for this rejoin. */
+  onRejoined?(result: JoinResult, resumed: boolean): void;
 }
 
 /** Transport abstraction so PeerSession doesn't depend on Socket.IO directly. */
@@ -32,16 +36,24 @@ export class SocketSignaling implements SignalingChannel {
   private handlers: SignalingHandlers | null = null;
   /** Set once the first join succeeds; Socket.IO reconnects on its own, so rejoin then. */
   private roomId: string | null = null;
+  /** Lets the server swap our dead socket for the new one on a rejoin. */
+  private readonly clientId = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
 
   constructor(url: string) {
     this.socket = io(url, { transports: ["websocket"], autoConnect: false });
     this.socket.on("signal", (msg) => this.handlers?.onSignal(msg));
-    this.socket.on("peer-joined", () => this.handlers?.onPeerJoined());
+    this.socket.on("peer-joined", (resume) => this.handlers?.onPeerJoined(resume === true));
     this.socket.on("peer-left", () => this.handlers?.onPeerLeft());
     this.socket.on("chat", (msg) => this.handlers?.onChat?.(msg));
     this.socket.on("disconnect", () => this.handlers?.onDisconnect?.());
     this.socket.on("connect", () => {
-      if (this.roomId) this.socket.emit("join", this.roomId, (r) => this.handlers?.onRejoined?.(r));
+      if (!this.roomId) return;
+      const resume = this.handlers?.canResume?.() ?? false;
+      this.socket.emit("join", this.roomId, { clientId: this.clientId, resume }, (r) =>
+        this.handlers?.onRejoined?.(r, resume),
+      );
     });
   }
 
@@ -56,7 +68,7 @@ export class SocketSignaling implements SignalingChannel {
       this.socket.once("connect", () => {
         this.socket.off("connect_error", onError);
         // Without the timeout a lost ack would leave the caller waiting forever.
-        this.socket.timeout(5000).emit("join", roomId, (err, result) => {
+        this.socket.timeout(5000).emit("join", roomId, { clientId: this.clientId, resume: false }, (err, result) => {
           if (err) return reject(err);
           if (result.ok) this.roomId = roomId;
           resolve(result);

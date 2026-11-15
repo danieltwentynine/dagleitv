@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { Server } from "socket.io";
+import { Server, type DefaultEventsMap } from "socket.io";
 import {
   CHAT_MAX_LENGTH,
   ICE_PATH,
@@ -7,6 +7,8 @@ import {
   ROOM_ID_PATTERN,
   type ClientToServerEvents,
   type IceErrorCode,
+  type JoinOptions,
+  type JoinResult,
   type ServerToClientEvents,
 } from "@dagleitv/protocol";
 import { createIceProvider, createRateLimiter } from "./ice.js";
@@ -28,6 +30,18 @@ const clientIp = (req: IncomingMessage): string => {
     if (last) return last;
   }
   return req.socket.remoteAddress ?? "unknown";
+};
+
+// Logged once per boot so the proxy setup can be checked: if "resolved" is not
+// the visitor's address, every user shares one /ice rate-limit bucket.
+let ipLogged = false;
+const logClientIpOnce = (req: IncomingMessage) => {
+  if (ipLogged) return;
+  ipLogged = true;
+  const h = (name: string) => JSON.stringify(req.headers[name] ?? null);
+  console.log(
+    `client ip check: resolved=${clientIp(req)} x-forwarded-for=${h("x-forwarded-for")} cf-connecting-ip=${h("cf-connecting-ip")}`,
+  );
 };
 
 const ice = createIceProvider();
@@ -82,6 +96,7 @@ const httpServer = createServer((req, res) => {
 // The caller must join the room first (see PeerSession.start).
 async function handleIce(req: IncomingMessage, res: ServerResponse, url: URL) {
   const fail = (status: number, error: IceErrorCode) => sendJson(req, res, status, { error });
+  logClientIpOnce(req);
   if (!iceAllowed(clientIp(req))) return fail(429, "rate-limited");
   const room = url.searchParams.get("room") ?? "";
   if (!ROOM_ID_PATTERN.test(room)) return fail(400, "invalid-room");
@@ -89,7 +104,13 @@ async function handleIce(req: IncomingMessage, res: ServerResponse, url: URL) {
   sendJson(req, res, 200, await ice.get());
 }
 
-const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
+interface SocketData {
+  clientId?: string;
+  /** Replaced by the same client's new socket: its disconnect is not a departure. */
+  evicted?: boolean;
+}
+
+const io = new Server<ClientToServerEvents, ServerToClientEvents, DefaultEventsMap, SocketData>(httpServer, {
   cors: { origin: allowedOrigins },
   transports: ["websocket"],
   // SDP is a few KB; the 1 MB default only helps someone abusing the relay.
@@ -102,11 +123,27 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
 io.on("connection", (socket) => {
   let roomId: string | null = null;
 
-  socket.on("join", async (requestedRoom, ack) => {
+  socket.on("join", async (requestedRoom, opts: unknown, maybeAck: unknown) => {
+    // Clients from before JoinOptions send (room, ack).
+    const ack = (typeof opts === "function" ? opts : maybeAck) as ((result: JoinResult) => void) | undefined;
     if (typeof ack !== "function") return;
+    const { clientId, resume } = (typeof opts === "object" && opts ? opts : {}) as Partial<JoinOptions>;
     if (roomId || typeof requestedRoom !== "string" || !ROOM_ID_PATTERN.test(requestedRoom)) {
       ack({ ok: false, error: "invalid-room" });
       return;
+    }
+    // The same client coming back after a network drop: its old socket can look
+    // alive here for up to ~45 s. Drop it quietly so the seat is free and the
+    // partner is not told that anyone left.
+    if (typeof clientId === "string" && clientId.length >= 16 && clientId.length <= 64) {
+      for (const id of [...(io.sockets.adapter.rooms.get(requestedRoom) ?? [])]) {
+        const old = io.sockets.sockets.get(id);
+        if (old?.data.clientId !== clientId) continue;
+        old.data.evicted = true;
+        void old.leave(requestedRoom);
+        old.disconnect(true);
+      }
+      socket.data.clientId = clientId;
     }
     const existing = io.sockets.adapter.rooms.get(requestedRoom)?.size ?? 0;
     if (existing >= MAX_PEERS_PER_ROOM) {
@@ -116,7 +153,7 @@ io.on("connection", (socket) => {
     roomId = requestedRoom;
     await socket.join(requestedRoom);
     ack({ ok: true, peerPresent: existing > 0 });
-    socket.to(requestedRoom).emit("peer-joined");
+    socket.to(requestedRoom).emit("peer-joined", resume === true);
   });
 
   // Pure relay: forward to the other peer in the room, never inspect SDP.
@@ -141,9 +178,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    if (roomId) socket.to(roomId).emit("peer-left");
+    if (roomId && !socket.data.evicted) socket.to(roomId).emit("peer-left");
   });
 });
+
+export { httpServer, io };
 
 httpServer.listen(port, () => {
   console.log(

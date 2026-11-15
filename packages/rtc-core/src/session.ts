@@ -46,7 +46,12 @@ export type VoiceState = "off" | "muted" | "live";
 
 type ControlMessage =
   | { type: "share-state"; sharing: boolean }
-  | { type: "voice-state"; state: VoiceState };
+  | { type: "voice-state"; state: VoiceState }
+  | { type: "ping" }
+  | { type: "pong" };
+
+/** How long the partner has to answer a ping before a peer-left is believed. */
+const PROBE_MS = 2000;
 
 /**
  * Two-peer session over a fixed 3-transceiver layout (see layout.ts).
@@ -58,6 +63,10 @@ type ControlMessage =
  * transceivers, so it needs no renegotiation. Both peers can share because
  * both sides' transceivers are sendrecv. Voice (M4) works the same way on the
  * third transceiver.
+ *
+ * The call does not depend on the signaling socket once it is up. If either
+ * socket drops, a working peer connection is kept; it is only rebuilt when the
+ * media itself has gone (see mediaAlive / peerGone).
  */
 export class PeerSession {
   private readonly signaling: SignalingChannel;
@@ -80,6 +89,9 @@ export class PeerSession {
   private voiceMuted = false;
   private readonly resolveIce: (() => Promise<RTCIceServer[]>) | null;
   private closed = false;
+  /** The server says the partner is not in the room, but the call still works: their socket dropped, not them. */
+  private peerGone = false;
+  private probeTimer: ReturnType<typeof setTimeout> | undefined;
   private phase: ConnectionPhase = "idle";
 
   constructor(options: PeerSessionOptions) {
@@ -94,25 +106,40 @@ export class PeerSession {
   async start(roomId: string): Promise<JoinResult> {
     this.signaling.setHandlers({
       onSignal: (msg) => void this.handleSignal(msg).catch((e) => this.fail(e)),
-      onPeerJoined: () => void this.makeOffer().catch((e) => this.fail(e)),
+      onPeerJoined: (resume) => {
+        // Their socket came back and the call never stopped: nothing to redo.
+        if (resume && this.mediaAlive) this.peerGone = false;
+        else void this.makeOffer().catch((e) => this.fail(e));
+      },
+      // A dropped socket is not proof they left, and ICE takes several seconds
+      // to notice a closed tab. Ask over the call itself: an answer keeps it.
       onPeerLeft: () => {
-        this.teardownPeer();
-        this.setPhase("waiting-for-peer");
+        if (!this.mediaAlive) return this.peerLeft();
+        this.peerGone = true;
+        const pc = this.pc;
+        this.sendControl({ type: "ping" });
+        clearTimeout(this.probeTimer);
+        this.probeTimer = setTimeout(() => {
+          if (this.pc === pc && this.peerGone) this.peerLeft();
+        }, PROBE_MS);
       },
       onChat: (msg) => this.events.onChat?.(msg),
       onDisconnect: () => {
-        if (!this.closed) this.setPhase("disconnected");
+        if (!this.closed && !this.mediaAlive) this.setPhase("disconnected");
       },
-      // The server told the partner we left, so they dropped the call. If they
-      // are still there they get peer-joined now and send a fresh offer.
-      // shortcut: room-full here means the server hasn't noticed our old socket
-      // is dead yet (up to ~45 s); we show "failed" and the Reconnect button works.
-      onRejoined: (result) => {
+      canResume: () => this.mediaAlive,
+      onRejoined: (result, resumed) => {
         if (!result.ok) this.setPhase("failed");
-        else if (!result.peerPresent) {
-          this.teardownPeer();
-          this.setPhase("waiting-for-peer");
+        else if (resumed && this.mediaAlive) {
+          this.peerGone = !result.peerPresent;
+          this.setPhase("connected");
         }
+        // The call died while we were rejoining, after telling the partner to
+        // keep it. Nobody will offer, so show the state that has a Retry button.
+        else if (resumed) this.setPhase("disconnected");
+        // The partner got peer-joined without resume and sends a fresh offer.
+        else if (result.peerPresent) this.setPhase("negotiating");
+        else this.peerLeft();
       },
     });
     // Signals can arrive as soon as we join, so the gate must exist before that.
@@ -285,7 +312,8 @@ export class PeerSession {
     pc.onconnectionstatechange = () => {
       if (this.pc !== pc) return;
       const s = pc.connectionState;
-      if (s === "connected") this.setPhase("connected");
+      if (this.peerGone && (s === "disconnected" || s === "failed")) this.peerLeft();
+      else if (s === "connected") this.setPhase("connected");
       else if (s === "disconnected") this.setPhase("disconnected");
       else if (s === "failed") this.setPhase("failed");
     };
@@ -302,7 +330,19 @@ export class PeerSession {
     return pc;
   }
 
+  /** Media flows and the control channel is open. */
+  private get mediaAlive(): boolean {
+    return this.pc?.connectionState === "connected" && this.ctl?.readyState === "open";
+  }
+
+  private peerLeft(): void {
+    this.teardownPeer();
+    this.setPhase("waiting-for-peer");
+  }
+
   private teardownPeer(): void {
+    this.peerGone = false;
+    clearTimeout(this.probeTimer);
     const hadRemote = this.remoteScreen.getTracks().length > 0;
     this.ctl?.close();
     this.ctl = null;
@@ -322,11 +362,17 @@ export class PeerSession {
       this.sendControl({ type: "share-state", sharing: this.isSharing });
       this.sendVoiceState();
     };
+    // Closing the tab or leaving closes this channel well before ICE times out.
+    ch.onclose = () => {
+      if (this.ctl === ch && this.peerGone) this.peerLeft();
+    };
     ch.onmessage = (e) => {
       try {
         const msg = JSON.parse(String(e.data)) as ControlMessage;
         if (msg.type === "share-state") this.events.onRemoteSharing?.(msg.sharing);
         else if (msg.type === "voice-state") this.setRemoteVoiceState(msg.state);
+        else if (msg.type === "ping") this.sendControl({ type: "pong" });
+        else if (msg.type === "pong") clearTimeout(this.probeTimer);
       } catch {
         /* ignore malformed control messages */
       }
