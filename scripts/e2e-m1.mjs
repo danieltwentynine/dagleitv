@@ -60,10 +60,12 @@ const launch = async (name) => (browsers[name] ??= await ENGINES[name].launch(LA
 async function runPair(nameA, nameB) {
   const room = "e2eroom" + Math.random().toString(36).slice(2, 8);
   const contexts = [];
+  const pages = [];
   const open = async (name, query = "?fake=1") => {
     const context = await (await launch(name)).newContext();
     contexts.push(context);
     const page = await context.newPage();
+    pages.push([name, page]);
     // Keep every RTCPeerConnection reachable, for the simulated drop below.
     await page.addInitScript(() => {
       const Native = window.RTCPeerConnection;
@@ -153,6 +155,28 @@ async function runPair(nameA, nameB) {
     const t0 = await b.evaluate(() => document.querySelector("video").currentTime);
     await b.waitForFunction((t) => document.querySelector("video").currentTime > t + 1, t0, { timeout: 10000 });
     assert(true, "B's video keeps playing after the restart");
+  } catch (e) {
+    // What the connections looked like, without addresses: candidate types and
+    // whether each address is an mDNS name.
+    for (const [name, page] of pages) {
+      const info = await page.evaluate(async () => {
+        const pc = window.__pcs?.at(-1);
+        if (!pc) return "no peer connection";
+        const kinds = (sdp) => [...(sdp ?? "").matchAll(/a=candidate:\S+ \d (\S+) \d+ (\S+) \d+ typ (\S+)/g)]
+          .map(([, proto, addr, typ]) => `${typ}/${proto.toLowerCase()}${addr.endsWith(".local") ? "/mdns" : ""}`);
+        const stats = [];
+        (await pc.getStats()).forEach((r) => {
+          if (r.type === "local-candidate" || r.type === "remote-candidate") {
+            stats.push(`${r.type[0]}:${r.candidateType}/${r.protocol}${String(r.address ?? r.ip ?? "").endsWith(".local") ? "/mdns" : ""}`);
+          }
+          if (r.type === "candidate-pair") stats.push(`pair:${r.state}${r.nominated ? "*" : ""}`);
+        });
+        return { conn: pc.connectionState, ice: pc.iceConnectionState, gather: pc.iceGatheringState,
+          sig: pc.signalingState, localSdp: kinds(pc.localDescription?.sdp), remoteSdp: kinds(pc.remoteDescription?.sdp), stats };
+      }).catch((err) => `evaluate failed: ${err.message}`);
+      console.log(`  diag ${name}:`, JSON.stringify(info));
+    }
+    throw e;
   } finally {
     await Promise.all(contexts.map((c) => c.close().catch(() => {})));
   }
