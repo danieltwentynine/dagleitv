@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2 · Screen capture — WebRTC lab</title>
+<link rel="stylesheet" href="/css/lab.css">
+</head>
+<body>
+<header><a href="/">← Lab index</a><h1>2 · Screen capture</h1>
+<p class="lead">getDisplayMedia(): feature detection first, then one attempt per click (each needs its own user gesture). The report records the options accepted, track settings (displaySurface), audio, and when the user stops sharing.</p></header>
+<main>
+  <section id="unsupported" class="warn" hidden></section>
+  <section>
+    <fieldset>
+      <legend>Options for the next attempt</legend>
+      <label>Video<select id="video-opt"><option value="true">true</option><option value="hd">1920x1080 ideal, 30 fps</option><option value="hfr">frameRate ideal 60</option></select></label>
+      <label>Audio<select id="audio-opt"><option value="false">false</option><option value="true">true</option><option value="noproc">true, processing off</option></select></label>
+      <label>Preferred surface (displaySurface)<select id="surface"><option value="">(none)</option><option>monitor</option><option>window</option><option>browser</option></select></label>
+      <label>systemAudio<select id="systemAudio"><option value="">(unset)</option><option>include</option><option>exclude</option></select></label>
+      <label>selfBrowserSurface<select id="selfBrowserSurface"><option value="">(unset)</option><option>include</option><option>exclude</option></select></label>
+      <label>surfaceSwitching<select id="surfaceSwitching"><option value="">(unset)</option><option>include</option><option>exclude</option></select></label>
+      <label>monitorTypeSurfaces<select id="monitorTypeSurfaces"><option value="">(unset)</option><option>include</option><option>exclude</option></select></label>
+      <label>preferCurrentTab<select id="preferCurrentTab"><option value="">(unset)</option><option value="true">true</option></select></label>
+    </fieldset>
+    <div class="row" style="margin-top:12px">
+      <button id="start">Start screen capture</button>
+      <button id="stop" class="secondary">Stop</button>
+    </div>
+  </section>
+  <section><h2>Preview</h2><video id="video" autoplay playsinline muted></video><p id="status" class="muted"></p></section>
+  <section><div class="row"><h2>Capability report</h2><button id="copy-report">Copy report as JSON</button></div><pre id="report"></pre></section>
+</main>
+<script type="module" src="/js/screen.js"></script>
+</body>
+</html>

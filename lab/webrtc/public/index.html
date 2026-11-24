@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DagleiTV WebRTC lab</title>
+<link rel="stylesheet" href="/css/lab.css">
+</head>
+<body>
+<header>
+  <h1>DagleiTV WebRTC lab</h1>
+  <p class="lead">An independent laboratory for testing browser WebRTC capabilities. It does not use the app's code. Every page shows a capability report and can copy it as JSON.</p>
+</header>
+<main>
+  <section id="context"></section>
+  <ul class="cards">
+    <li><a href="/camera.html"><strong>1 · Camera capture</strong><br>getUserMedia, permission flow, devices, constraints, track settings and capabilities.</a></li>
+    <li><a href="/screen.html"><strong>2 · Screen capture</strong><br>getDisplayMedia, audio, displaySurface, track ended; unsupported browsers reported cleanly.</a></li>
+    <li><a href="/p2p.html"><strong>3 · P2P connection</strong><br>Loopback and manual copy/paste SDP between two tabs or browsers; ICE candidates and state timeline.</a></li>
+    <li><a href="/codecs.html"><strong>4 · Codec inspection</strong><br>Sender/receiver capabilities, MediaCapabilities, setCodecPreferences, negotiated codec.</a></li>
+    <li><a href="/stream.html"><strong>5 · Cross-browser streaming</strong><br>Publish camera or screen to another browser on the LAN through the lab's signaling; live stats.</a></li>
+  </ul>
+</main>
+<script type="module">
+  const el = document.querySelector('#context');
+  const secure = window.isSecureContext;
+  el.innerHTML = `<h2>This browser</h2>
+    <p>Secure context: <strong class="${secure ? 'ok' : 'bad'}">${secure ? 'yes' : 'no'}</strong>
+    ${secure ? '' : '— camera, screen and clipboard APIs are blocked here. Open the lab on <code>localhost</code> or over HTTPS (see README).'}</p>
+    <p class="muted"></p>`;
+  el.querySelector('p.muted').textContent = navigator.userAgent;
+</script>
+</body>
+</html>

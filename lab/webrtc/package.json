@@ -1,0 +1,15 @@
+{
+  "name": "daglei-webrtc-lab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Independent WebRTC capability lab for DagleiTV. Not part of the pnpm workspace; zero dependencies.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/server.mjs",
+    "start:lan": "node server/server.mjs --host 0.0.0.0",
+    "check": "node scripts/check.mjs"
+  }
+}

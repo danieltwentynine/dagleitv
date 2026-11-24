@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5 · Cross-browser streaming — WebRTC lab</title>
+<link rel="stylesheet" href="/css/lab.css">
+</head>
+<body>
+<header><a href="/">← Lab index</a><h1>5 · Cross-browser streaming</h1>
+<p class="lead">Two browsers or devices on the same LAN. One publishes the camera or the screen; the other views. The lab server only relays offer / answer / ICE candidates for a room code. The live stats panel shows codec, resolution, fps, bitrate, packets lost, RTT and the candidate pair types.</p></header>
+<main>
+  <section id="insecure" class="warn" hidden>This page is not a secure context, so camera and screen are blocked (viewing still works). On another device, open the lab over HTTPS; see the README.</section>
+  <section><div id="ice"></div></section>
+  <section>
+    <div class="row">
+      <label>Room code<input id="room" value="lab-1" maxlength="32"></label>
+      <label>Role<select id="role"><option value="publisher">publisher</option><option value="viewer">viewer</option></select></label>
+      <label>Publish<select id="source"><option value="camera">camera + mic</option><option value="screen">screen (+ audio if offered)</option><option value="synthetic">synthetic canvas</option></select></label>
+      <button id="join">Join room</button>
+      <button id="leave" class="secondary">Leave</button>
+    </div>
+    <p id="status" class="muted">Not connected.</p>
+  </section>
+  <div class="grid2">
+    <section><h2>Local</h2><video id="local" autoplay playsinline muted></video></section>
+    <section><h2>Remote</h2><video id="remote" autoplay playsinline controls></video></section>
+  </div>
+  <section><h2>Live stats (per peer, every second)</h2><div id="stats"></div></section>
+  <section><h2>Timeline</h2><ol id="timeline" class="timeline"></ol></section>
+  <section><div class="row"><h2>Capability report</h2><button id="copy-report">Copy report as JSON</button></div><pre id="report"></pre></section>
+</main>
+<script type="module" src="/js/stream.js"></script>
+</body>
+</html>

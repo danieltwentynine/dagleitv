@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3 · P2P connection — WebRTC lab</title>
+<link rel="stylesheet" href="/css/lab.css">
+</head>
+<body>
+<header><a href="/">← Lab index</a><h1>3 · P2P connection</h1>
+<p class="lead">Two RTCPeerConnections. (a) Loopback in this page; (b) manual copy/paste of SDP between two tabs or two browsers, with no server. ICE candidates are listed by type (host / srflx / relay, mDNS <code>.local</code>), plus a timeline of ICE, connection and signaling states.</p></header>
+<main>
+  <section><div id="ice"></div></section>
+  <section>
+    <h2>(a) Loopback in one page</h2>
+    <div class="row">
+      <label>Source<select id="loop-source"><option value="synthetic">synthetic canvas (no permission)</option><option value="camera">camera + mic</option></select></label>
+      <button id="loop-start">Start loopback</button>
+      <button id="loop-stop" class="secondary">Hang up</button>
+    </div>
+    <div class="grid2" style="margin-top:12px"><video id="loop-local" autoplay playsinline muted></video><video id="loop-remote" autoplay playsinline muted></video></div>
+  </section>
+  <section>
+    <h2>(b) Manual copy/paste between two tabs or browsers</h2>
+    <p class="muted">Tab A: "Create offer", wait for ICE gathering, copy the offer. Tab B: paste it, "Create answer", copy the answer. Tab A: paste the answer, "Apply answer". A data channel sends a ping once connected; video is optional.</p>
+    <div class="row">
+      <label>Send video<select id="manual-source"><option value="none">no (data channel only)</option><option value="synthetic">synthetic canvas</option><option value="camera">camera + mic</option></select></label>
+      <button id="make-offer">A · Create offer</button>
+      <button id="make-answer" class="secondary">B · Create answer from pasted offer</button>
+      <button id="apply-answer" class="secondary">A · Apply pasted answer</button>
+      <button id="manual-ping" class="secondary">Send ping</button>
+      <button id="manual-stop" class="secondary">Close</button>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <label>Local SDP (copy this)<textarea id="local-sdp" class="sdp" readonly></textarea></label>
+      <label>Remote SDP (paste here)<textarea id="remote-sdp" class="sdp"></textarea></label>
+    </div>
+    <div class="grid2"><video id="manual-local" autoplay playsinline muted></video><video id="manual-remote" autoplay playsinline></video></div>
+  </section>
+  <div class="grid2">
+    <section><h2>Candidates</h2><table id="cands"><thead><tr><th>pc</th><th>type</th><th>proto</th><th>address</th><th>mDNS</th></tr></thead><tbody></tbody></table></section>
+    <section><h2>State timeline</h2><ol id="timeline" class="timeline"></ol></section>
+  </div>
+  <section><div class="row"><h2>Capability report</h2><button id="copy-report">Copy report as JSON</button></div><pre id="report"></pre></section>
+</main>
+<script type="module" src="/js/p2p.js"></script>
+</body>
+</html>

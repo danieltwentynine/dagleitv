@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4 · Codec inspection — WebRTC lab</title>
+<link rel="stylesheet" href="/css/lab.css">
+</head>
+<body>
+<header><a href="/">← Lab index</a><h1>4 · Codec inspection</h1>
+<p class="lead">What the browser can send and receive: RTCRtpSender / RTCRtpReceiver.getCapabilities(), MediaCapabilities encodingInfo / decodingInfo for <code>webrtc</code>, whether setCodecPreferences exists, and which codec a loopback call actually negotiates (from getStats()).</p></header>
+<main>
+  <section>
+    <div class="row">
+      <button id="inspect">Inspect capabilities</button>
+      <label>Preferred video codec for the loopback<select id="prefer"><option value="">(browser default)</option></select></label>
+      <button id="loopback" class="secondary">Run loopback + read negotiated codec</button>
+    </div>
+  </section>
+  <div class="grid2">
+    <section><h2>Video codecs (send / receive)</h2><table id="video-caps"></table></section>
+    <section><h2>Audio codecs (send / receive)</h2><table id="audio-caps"></table></section>
+  </div>
+  <section><h2>MediaCapabilities (webrtc)</h2><table id="mc"></table></section>
+  <section><h2>Negotiated (loopback)</h2><p id="negotiated" class="muted">Not run yet.</p></section>
+  <section><div class="row"><h2>Capability report</h2><button id="copy-report">Copy report as JSON</button></div><pre id="report"></pre></section>
+</main>
+<script type="module" src="/js/codecs.js"></script>
+</body>
+</html>

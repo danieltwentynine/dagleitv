@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1 · Camera capture — WebRTC lab</title>
+<link rel="stylesheet" href="/css/lab.css">
+</head>
+<body>
+<header><a href="/">← Lab index</a><h1>1 · Camera capture</h1>
+<p class="lead">getUserMedia(): the permission flow, device list before and after permission, and a set of constraints. Each attempt records track.getSettings() and getCapabilities(), or the exact error name.</p></header>
+<main>
+  <section>
+    <div class="row">
+      <button id="run-all">Run all constraint tests</button>
+      <button id="enumerate" class="secondary">List devices</button>
+      <label>Camera<select id="camera"><option value="">default</option></select></label>
+      <label>Microphone<select id="mic"><option value="">default</option></select></label>
+      <button id="preview" class="secondary">Preview selected (audio + video)</button>
+      <button id="stop" class="secondary">Stop</button>
+    </div>
+  </section>
+  <div class="grid2">
+    <section><h2>Preview</h2><video id="video" autoplay playsinline muted></video><p id="status" class="muted"></p></section>
+    <section><h2>Attempts</h2><table id="attempts"><thead><tr><th>test</th><th>result</th><th>settings</th></tr></thead><tbody></tbody></table></section>
+  </div>
+  <section><div class="row"><h2>Capability report</h2><button id="copy-report">Copy report as JSON</button></div><pre id="report"></pre></section>
+</main>
+<script type="module" src="/js/camera.js"></script>
+</body>
+</html>
