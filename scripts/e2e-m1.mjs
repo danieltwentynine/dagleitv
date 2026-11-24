@@ -25,6 +25,9 @@ const LAUNCH = {
       "media.navigator.permission.disabled": true,
       "media.autoplay.default": 0,
       "media.autoplay.blocking_policy": 0,
+      // Firefox hides host candidates behind mDNS names, which CI runners can't
+      // resolve. Test-only: real users keep the browser default.
+      "media.peerconnection.ice.obfuscate_host_addresses": false,
     },
   },
   webkit: {},
@@ -123,6 +126,7 @@ try {
   start("pnpm", ["dev:web"]);
   await waitFor("http://localhost:4000/health");
   await waitFor(WEB);
+  await waitFor(`${WEB}/room/warmup0000`, 120000); // compile the room route before timing anything
 
   for (const [a, b] of pairs) {
     console.log(`\n${a} (A, answers) <-> ${b} (B, offers)`);
