@@ -11,6 +11,7 @@ const PHASE_TAG: Record<ConnectionPhase, { label: string; tone: Tone }> = {
   "waiting-for-peer": { label: "waiting", tone: "mute" },
   negotiating: { label: "connecting", tone: "warn" },
   connected: { label: "connected", tone: "ok" },
+  reconnecting: { label: "reconnecting", tone: "warn" },
   disconnected: { label: "connection lost", tone: "warn" },
   failed: { label: "couldn't connect", tone: "warn" },
   closed: { label: "left room", tone: "mute" },

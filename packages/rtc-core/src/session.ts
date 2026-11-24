@@ -8,6 +8,8 @@ export type ConnectionPhase =
   | "waiting-for-peer"
   | "negotiating"
   | "connected"
+  /** The call dropped and is being recovered (ICE restart); media may be frozen. */
+  | "reconnecting"
   | "disconnected"
   | "failed"
   | "closed";
@@ -52,6 +54,10 @@ type ControlMessage =
 
 /** How long the partner has to answer a ping before a peer-left is believed. */
 const PROBE_MS = 2000;
+/** A dropped connection often comes back by itself; give it this long before an ICE restart. */
+const RESTART_AFTER_MS = 3000;
+/** Show "Connection lost" (with Retry) if a dropped call isn't back by then. */
+const GIVE_UP_MS = 30_000;
 
 /**
  * Two-peer session over a fixed 3-transceiver layout (see layout.ts).
@@ -92,6 +98,12 @@ export class PeerSession {
   /** The server says the partner is not in the room, but the call still works: their socket dropped, not them. */
   private peerGone = false;
   private probeTimer: ReturnType<typeof setTimeout> | undefined;
+  /** This side sent the offer for the current connection, so it is the one that restarts ICE. */
+  private isOfferer = false;
+  /** The current connection reached "connected" at least once; only then is a drop recovered. */
+  private wasConnected = false;
+  private restartTimer: ReturnType<typeof setTimeout> | undefined;
+  private giveUpTimer: ReturnType<typeof setTimeout> | undefined;
   private phase: ConnectionPhase = "idle";
 
   constructor(options: PeerSessionOptions) {
@@ -125,7 +137,8 @@ export class PeerSession {
       },
       onChat: (msg) => this.events.onChat?.(msg),
       onDisconnect: () => {
-        if (!this.closed && !this.mediaAlive) this.setPhase("disconnected");
+        // A call already being recovered keeps its own grace period.
+        if (!this.closed && !this.mediaAlive && this.phase !== "reconnecting") this.setPhase("disconnected");
       },
       canResume: () => this.mediaAlive,
       onRejoined: (result, resumed) => {
@@ -253,6 +266,7 @@ export class PeerSession {
     await this.iceReady;
     if (this.closed) return;
     const pc = this.createPeer();
+    this.isOfferer = true;
     pc.addTransceiver("video", { direction: "sendrecv", streams: [this.screenMsid] });
     pc.addTransceiver("audio", { direction: "sendrecv", streams: [this.screenMsid] });
     pc.addTransceiver("audio", { direction: "sendrecv" }); // voice (M4)
@@ -272,6 +286,8 @@ export class PeerSession {
     await this.iceReady;
     if (this.closed) return;
     if (msg.kind === "offer") {
+      // The partner restarting ICE on the call we already share: answer on it.
+      if (msg.restart && this.pc?.signalingState === "stable") return this.answerRestart(this.pc, msg.sdp);
       const pc = this.createPeer();
       this.ctl = this.createControlChannel(pc);
       this.setPhase("negotiating");
@@ -305,6 +321,52 @@ export class PeerSession {
       if (this.pc?.remoteDescription) await this.addCandidate(this.pc, msg.candidate);
       else this.pendingCandidates.push(msg.candidate);
     }
+  }
+
+  private async answerRestart(pc: RTCPeerConnection, sdp: RTCSessionDescriptionInit): Promise<void> {
+    try {
+      await pc.setRemoteDescription(sdp);
+      await pc.setLocalDescription();
+      if (this.pc === pc) this.signaling.send({ kind: "answer", sdp: pc.localDescription!.toJSON() });
+    } catch (e) {
+      this.failIfCurrent(pc, e);
+    }
+  }
+
+  // ---- recovery ----------------------------------------------------------
+
+  /**
+   * A call that was up has dropped. Only the offerer restarts ICE (so the two
+   * sides never offer at once); the answerer waits for that offer. Either way
+   * the "Connection lost" screen only comes after GIVE_UP_MS, and the call is
+   * kept: if it comes back later, the phase returns to connected.
+   */
+  private recover(pc: RTCPeerConnection, failed: boolean): void {
+    this.setPhase("reconnecting");
+    this.giveUpTimer ??= setTimeout(() => {
+      if (this.pc === pc && pc.connectionState !== "connected") this.setPhase("disconnected");
+    }, GIVE_UP_MS);
+    if (!this.isOfferer) return;
+    clearTimeout(this.restartTimer);
+    this.restartTimer = setTimeout(() => void this.restartIce(pc), failed ? 0 : RESTART_AFTER_MS);
+  }
+
+  private async restartIce(pc: RTCPeerConnection): Promise<void> {
+    // Back by itself, replaced, or a restart offer is already out.
+    if (this.pc !== pc || pc.connectionState === "connected" || pc.signalingState !== "stable") return;
+    try {
+      pc.restartIce();
+      await pc.setLocalDescription();
+      if (this.pc === pc) this.signaling.send({ kind: "offer", sdp: pc.localDescription!.toJSON(), restart: true });
+    } catch (e) {
+      this.failIfCurrent(pc, e);
+    }
+  }
+
+  private clearRecovery(): void {
+    clearTimeout(this.restartTimer);
+    clearTimeout(this.giveUpTimer);
+    this.restartTimer = this.giveUpTimer = undefined;
   }
 
   private async flushCandidates(pc: RTCPeerConnection): Promise<void> {
@@ -347,8 +409,12 @@ export class PeerSession {
       if (this.pc !== pc) return;
       const s = pc.connectionState;
       if (this.peerGone && (s === "disconnected" || s === "failed")) this.peerLeft();
-      else if (s === "connected") this.setPhase("connected");
-      else if (s === "disconnected") this.setPhase("disconnected");
+      else if (s === "connected") {
+        this.wasConnected = true;
+        this.clearRecovery();
+        this.setPhase("connected");
+      } else if ((s === "disconnected" || s === "failed") && this.wasConnected) this.recover(pc, s === "failed");
+      // Never got through at all (e.g. every candidate pair blocked): nothing to recover.
       else if (s === "failed") this.setPhase("failed");
     };
     pc.ontrack = (e) => {
@@ -376,6 +442,9 @@ export class PeerSession {
 
   private teardownPeer(): void {
     this.peerGone = false;
+    this.isOfferer = false;
+    this.wasConnected = false;
+    this.clearRecovery();
     clearTimeout(this.probeTimer);
     const hadRemote = this.remoteScreen.getTracks().length > 0;
     this.ctl?.close();

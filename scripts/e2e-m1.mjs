@@ -1,8 +1,8 @@
 // M1 smoke test: two pages, fake capture source, both sharing directions.
 // Usage: pnpm e2e   (starts signaling + web dev servers itself)
 //
-// PAIRS picks the engines for peer A (joins first, answers) and peer B (joins
-// second, offers): comma-separated "a:b" pairs of chromium | firefox | webkit,
+// PAIRS picks the engines for peer A (joins first, so it gets peer-joined and
+// offers) and peer B (joins second, answers): comma-separated "a:b" pairs of chromium | firefox | webkit,
 // or "all" for every combination. Default "chromium:chromium".
 //   PAIRS=chromium:firefox,firefox:chromium pnpm e2e
 // These are Playwright's builds, not branded browsers: its WebKit is not Safari
@@ -64,6 +64,17 @@ async function runPair(nameA, nameB) {
     const context = await (await launch(name)).newContext();
     contexts.push(context);
     const page = await context.newPage();
+    // Keep every RTCPeerConnection reachable, for the simulated drop below.
+    await page.addInitScript(() => {
+      const Native = window.RTCPeerConnection;
+      window.__pcs = [];
+      window.RTCPeerConnection = function (...args) {
+        const pc = new Native(...args);
+        window.__pcs.push(pc);
+        return pc;
+      };
+      window.RTCPeerConnection.prototype = Native.prototype;
+    });
     page.on("pageerror", (e) => console.log(`  pageerror (${name}):`, e.message));
     await page.goto(`${WEB}/room/${room}${query}`);
     return page;
@@ -115,6 +126,33 @@ async function runPair(nameA, nameB) {
     assert(true, "after B reloads, both peers reconnect");
     await a.getByTestId("share").click();
     await check(b, "A shares -> B on the new connection");
+
+    // Simulated network drop on the offerer (A). Real UDP can't be cut from
+    // here, so A's connection is made to report "disconnected"; the ICE
+    // restart that follows is real and must happen on the same connections.
+    const ufrag = (p) => p.evaluate(() => window.__pcs.at(-1).localDescription.sdp.match(/a=ice-ufrag:(\S+)/)[1]);
+    const pcCount = (p) => p.evaluate(() => window.__pcs.length);
+    const [ufragA, ufragB, countB] = [await ufrag(a), await ufrag(b), await pcCount(b)];
+    await a.evaluate(() => {
+      const pc = window.__pcs.at(-1);
+      Object.defineProperty(pc, "connectionState", { configurable: true, get: () => "disconnected" });
+      pc.onconnectionstatechange(new Event("connectionstatechange")); // Firefox ignores dispatched ones
+    });
+    await a.getByTestId("phase").filter({ hasText: "reconnecting" }).waitFor({ timeout: 2000 });
+    assert(true, "drop -> A shows 'reconnecting'");
+    await a.waitForFunction((u) => window.__pcs.at(-1).localDescription.sdp.match(/a=ice-ufrag:(\S+)/)[1] !== u
+      && window.__pcs.at(-1).signalingState === "stable", ufragA, { timeout: 10000 });
+    assert((await ufrag(b)) !== ufragB && (await pcCount(b)) === countB, "ICE restart answered on B's existing connection");
+    await a.evaluate(() => {
+      const pc = window.__pcs.at(-1);
+      delete pc.connectionState; // back to the real getter
+      pc.onconnectionstatechange(new Event("connectionstatechange")); // Firefox ignores dispatched ones
+    });
+    await a.waitForFunction(() => !/reconnecting/.test(document.querySelector('[data-testid="phase"]').textContent), null, { timeout: 10000 });
+    assert(true, "A leaves 'reconnecting' once the connection reports connected");
+    const t0 = await b.evaluate(() => document.querySelector("video").currentTime);
+    await b.waitForFunction((t) => document.querySelector("video").currentTime > t + 1, t0, { timeout: 10000 });
+    assert(true, "B's video keeps playing after the restart");
   } finally {
     await Promise.all(contexts.map((c) => c.close().catch(() => {})));
   }
@@ -129,7 +167,7 @@ try {
   await waitFor(`${WEB}/room/warmup0000`, 120000); // compile the room route before timing anything
 
   for (const [a, b] of pairs) {
-    console.log(`\n${a} (A, answers) <-> ${b} (B, offers)`);
+    console.log(`\n${a} (A, offers) <-> ${b} (B, answers)`);
     try {
       await runPair(a, b);
       results.push([a, b, "PASS"]);

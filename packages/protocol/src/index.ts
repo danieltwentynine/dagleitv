@@ -3,7 +3,8 @@
 export const MAX_PEERS_PER_ROOM = 2;
 
 export type SignalMessage =
-  | { kind: "offer"; sdp: RTCSessionDescriptionInit }
+  /** `restart`: an ICE restart on the existing call, so answer it rather than starting a new one. */
+  | { kind: "offer"; sdp: RTCSessionDescriptionInit; restart?: boolean }
   | { kind: "answer"; sdp: RTCSessionDescriptionInit }
   | { kind: "ice-candidate"; candidate: RTCIceCandidateInit | null };
 

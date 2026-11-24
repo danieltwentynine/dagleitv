@@ -345,6 +345,18 @@ function gateFor(p: StageProps): GateContent | null {
       ),
     };
   }
+  if (p.phase === "reconnecting") {
+    return {
+      art: <AnimatedAscii frames={CONNECTING_FRAMES} ms={300} size="l" />,
+      title: "Reconnecting",
+      body: "The picture froze. Trying to get it back. This usually takes a few seconds.",
+      action: (
+        <button className="btn btn-lg cut" onClick={p.onLeave}>
+          Leave room
+        </button>
+      ),
+    };
+  }
   if (p.remoteSharing) return null;
   if (p.sharing) {
     return {

@@ -30,6 +30,7 @@ const SIGNALING_URL = process.env.NEXT_PUBLIC_SIGNALING_URL ?? "http://localhost
 function tabTitle(phase: ConnectionPhase, joined: boolean, sharing: boolean, remoteSharing: boolean): string {
   if (!joined) return "Join room";
   if (phase === "disconnected" || phase === "failed") return "Connection lost";
+  if (phase === "reconnecting") return "Reconnecting…";
   if (remoteSharing) return "▶ Watching";
   if (sharing) return "● Sharing";
   if (phase === "connected") return "Connected";
@@ -97,7 +98,7 @@ export function Room({ roomId }: { roomId: string }) {
   const signal: SignalQuality | null =
     phase === "connected"
       ? quality
-      : phase === "disconnected" || phase === "failed"
+      : phase === "disconnected" || phase === "failed" || phase === "reconnecting"
         ? "offline"
         : null;
 
