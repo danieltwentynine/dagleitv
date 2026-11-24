@@ -20,3 +20,25 @@ playback, so mute the receiver video and play audio from a third window.
 | 5 | Does Netflix / Disney+ / Prime / YouTube show video or black, in Chrome and in Edge? With hardware acceleration off? | Receiver | |
 | 6 | Is audio stereo and in sync with video on the receiver? | Listen | |
 | 7 | Does the partner's browser "Stop sharing" bar end the share cleanly on both sides? | UI | |
+
+## Automated cross-engine run (fake media)
+
+`PAIRS=all pnpm e2e` runs the call for every engine pair (A joins first and
+answers, B offers). Playwright builds only: its WebKit is not Safari, its
+Firefox is patched, and media is the `?fake` canvas source. CI runs the
+Chromium/Firefox pairs on Linux.
+
+2026-11-24, macOS arm64, playwright-core 1.63 (Chromium 153, Firefox 155, WebKit build 2359):
+
+| A (answers) \ B (offers) | chromium | firefox | webkit |
+|---|---|---|---|
+| chromium | pass | pass | pass |
+| firefox | pass | pass | pass |
+| webkit | pass | **fail** | pass |
+
+The fail is WebKit receiving Firefox's share. Firefox's offer puts H.264 first,
+WebKit's answer keeps it, and Playwright's Firefox has no OpenH264 plugin, so
+it advertises H.264 but encodes nothing (`framesEncoded` 0). With Chromium as
+the answerer VP8 wins and it works. Still to check on real browsers: real
+Firefox sharing to real Safari, including a fresh Firefox profile that hasn't
+downloaded OpenH264 yet.

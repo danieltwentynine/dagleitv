@@ -18,3 +18,20 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+
+  # Two-peer call across engines with the synthetic ?fake source (no real
+  # screen capture). The only Linux Firefox coverage: there is no Linux machine.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright-core install --with-deps chromium firefox
+      - run: pnpm e2e
+        env:
+          PAIRS: chromium:firefox,firefox:chromium,firefox:firefox,chromium:chromium
