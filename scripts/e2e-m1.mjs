@@ -25,13 +25,6 @@ const LAUNCH = {
       "media.navigator.permission.disabled": true,
       "media.autoplay.default": 0,
       "media.autoplay.blocking_policy": 0,
-      // Firefox hides host candidates behind mDNS names, which CI runners can't
-      // resolve. Test-only: real users keep the browser default.
-      "media.peerconnection.ice.obfuscate_host_addresses": false,
-      // On Linux CI the separate socket process that runs WebRTC networking
-      // never gathers a candidate; keep it in the parent process (test-only).
-      "media.peerconnection.mtransport_process": false,
-      "network.process.enabled": false,
     },
   },
   webkit: {},

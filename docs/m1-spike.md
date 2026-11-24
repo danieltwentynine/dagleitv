@@ -25,8 +25,13 @@ playback, so mute the receiver video and play audio from a third window.
 
 `PAIRS=all pnpm e2e` runs the call for every engine pair (A joins first and
 offers, B answers). Playwright builds only: its WebKit is not Safari, its
-Firefox is patched, and media is the `?fake` canvas source. CI runs the
-Chromium/Firefox pairs on Linux.
+Firefox is patched, and media is the `?fake` canvas source. Each pair also
+reloads one peer mid-share and simulates a dropped connection (ICE restart).
+
+CI runs Chromium <-> Chromium only. On the GitHub Ubuntu runner, Playwright's
+Firefox never starts ICE gathering (no local candidates; the connection fails
+at once), with or without mDNS obfuscation and the socket process turned off,
+so Linux Firefox is **unverified** until it is run on a real Linux machine.
 
 2026-11-24, macOS arm64, playwright-core 1.63 (Chromium 153, Firefox 155, WebKit build 2359):
 
