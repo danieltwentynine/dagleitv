@@ -6,11 +6,12 @@ const STUN_ONLY: IceServersResponse = {
 };
 
 /**
- * Credential lifetime requested from Cloudflare. Reused until half is left.
- * Kept short because one set is shared by every caller, so a leaked set is
- * usable by anyone until it expires.
+ * Credential lifetime requested from Cloudflare. Reused until half is left, so
+ * every set handed out has at least 2 h left: longer than a 1 h 30 movie
+ * session, which can't renew TURN credentials mid-call. One set is shared by
+ * every caller, so a leaked set is usable by anyone until it expires.
  */
-const TTL_SECONDS = 60 * 60;
+const TTL_SECONDS = 4 * 60 * 60;
 
 interface Cached {
   value: IceServersResponse;

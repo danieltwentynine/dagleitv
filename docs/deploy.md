@@ -15,7 +15,7 @@ because rooms live in its memory.
      as in `apps/signaling/.env`.
 3. When it is live, `https://<service>.onrender.com/health` returns `ok`.
 4. In the Cloudflare dashboard, set a usage alert on the TURN key. Anyone who
-   finds `/ice` can get credentials (valid up to an hour), so the alert is the
+   finds `/ice` can get credentials (valid up to 4 hours), so the alert is the
    real guard against a surprise bill.
 
 The free plan sleeps after about 15 minutes idle, so the first join after a quiet

@@ -38,6 +38,25 @@ test("API error or empty body -> STUN fallback", async () => {
   assert.equal((await createIceProvider(env).get()).turn, false);
 });
 
+test("asks for 4 h credentials and serves each set only while 2 h or more is left", async (t) => {
+  const start = Date.now();
+  t.mock.method(Date, "now", () => start);
+  const bodies: unknown[] = [];
+  globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+    bodies.push(JSON.parse(String(init?.body)));
+    return new Response(JSON.stringify({ iceServers: [turn] }));
+  }) as typeof fetch;
+  const provider = createIceProvider(env);
+  await provider.get();
+  assert.deepEqual(bodies, [{ ttl: 4 * 3600 }]);
+  t.mock.method(Date, "now", () => start + 119 * 60_000);
+  await provider.get();
+  assert.equal(bodies.length, 1, "still more than 2 h left: reused");
+  t.mock.method(Date, "now", () => start + 121 * 60_000);
+  await provider.get();
+  assert.equal(bodies.length, 2, "2 h or less left: renewed");
+});
+
 test("mint failure reuses cached credentials only until they expire", async (t) => {
   const start = Date.now();
   t.mock.method(Date, "now", () => start);
@@ -45,9 +64,9 @@ test("mint failure reuses cached credentials only until they expire", async (t) 
   const provider = createIceProvider(env);
   await provider.get();
   stubFetch({}, 500);
-  t.mock.method(Date, "now", () => start + 31 * 60_000);
+  t.mock.method(Date, "now", () => start + 121 * 60_000);
   assert.equal((await provider.get()).turn, true);
-  t.mock.method(Date, "now", () => start + 61 * 60_000);
+  t.mock.method(Date, "now", () => start + 241 * 60_000);
   assert.equal((await provider.get()).turn, false);
 });
 
