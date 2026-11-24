@@ -41,3 +41,28 @@ instances, and each socket is closed after 5 minutes on Hobby (800 s on Pro).
 With in-memory rooms, the two people could miss each other, and the socket cut
 would tell the other side "peer left" and end the call. Moving signaling to
 Vercel needs Redis (Socket.IO Redis adapter) and reconnects that keep the call up.
+
+## Checks after deploying
+
+- **Client IP behind Render's proxy.** The `/ice` rate limit is per IP. After the
+  first join, the Render log has one `client ip check: resolved=...` line. If
+  `resolved` is not your own public IP (for example a proxy address), every
+  user shares one rate-limit bucket, and `clientIp` in
+  `apps/signaling/src/server.ts` must read another header (the same line shows
+  `cf-connecting-ip`).
+
+## TURN abuse (only in an extreme case)
+
+Anyone who opens a room can get the shared TURN credentials from `/ice`, valid
+for up to 4 hours. That is accepted; the Cloudflare usage alert is the guard.
+If usage spikes anyway:
+
+1. Lower `ICE_RATE_LIMIT` on Render (default 10 per minute per IP).
+2. To cut the current credentials off: create a new TURN key in Cloudflare
+   (Realtime > TURN), put its id and token into `CF_TURN_KEY_ID` /
+   `CF_TURN_API_TOKEN` on Render (saving restarts the service, which drops the
+   cached credentials), then delete the old key. Every call relayed on the old
+   credentials can drop, so pick a quiet moment. Whether deleting a key ends
+   credentials already issued is not documented; to end one set explicitly,
+   Cloudflare's `POST .../turn/keys/<key id>/credentials/<username>/revoke`
+   takes the `username` from the current `/ice` response.

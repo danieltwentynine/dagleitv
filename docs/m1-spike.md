@@ -3,8 +3,11 @@
 Automated `pnpm e2e` uses a synthetic canvas+tone source, so it proves
 negotiation and track flow only. The questions below need a real Windows
 machine with Chrome/Edge. Run `pnpm dev:signaling` and `pnpm dev:web`, open the
-room in two windows (or two machines), click **Share my screen**, then expand
-**Capture diagnostics** and record the output.
+room in two windows (or two machines) and click **Share my screen**. The app
+has no diagnostics panel: the sharing screen says whether system audio is on,
+and the rest comes from the browser's WebRTC page (`chrome://webrtc-internals`
+or `edge://webrtc-internals`, `about:webrtc` in Firefox) or the console, e.g.
+`navigator.mediaDevices.getSupportedConstraints()`.
 
 Avoid an infinity mirror when testing on one machine: don't capture a screen
 that shows the receiving window (use two profiles on separate monitors, or
@@ -14,9 +17,9 @@ playback, so mute the receiver video and play audio from a third window.
 | # | Question | How to check | Result |
 |---|---|---|---|
 | 1 | Does the picker offer "share system audio" for **entire screen** (Chrome and Edge)? | Picker UI | |
-| 2 | Does `audioTrackCount` equal 1 after ticking it? What do the audio `settings` say (channelCount, sampleRate)? | Diagnostics | |
-| 3 | Window capture: audio or none? Tab capture: audio or none? | Diagnostics | |
-| 4 | Do `supportedConstraints.restrictOwnAudio` / `suppressLocalAudioPlayback` exist? | Diagnostics | |
+| 2 | Does the sharing screen say "system audio on" after ticking it? What do the audio track settings say (channelCount, sampleRate)? | Sharing screen, webrtc-internals | |
+| 3 | Window capture: audio or none? Tab capture: audio or none? | Sharing screen | |
+| 4 | Do `restrictOwnAudio` / `suppressLocalAudioPlayback` exist in `getSupportedConstraints()`? | Console | |
 | 5 | Does Netflix / Disney+ / Prime / YouTube show video or black, in Chrome and in Edge? With hardware acceleration off? | Receiver | |
 | 6 | Is audio stereo and in sync with video on the receiver? | Listen | |
 | 7 | Does the partner's browser "Stop sharing" bar end the share cleanly on both sides? | UI | |

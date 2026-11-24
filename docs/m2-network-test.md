@@ -7,17 +7,17 @@ throughput ceiling.
 
 1. Cloudflare dashboard > Realtime > TURN: create a TURN key. Put its id and API
    token in `apps/signaling/.env` as `CF_TURN_KEY_ID` / `CF_TURN_API_TOKEN`.
-   Without them the server serves STUN only and the web UI shows
-   "TURN credentials: no (STUN only)".
+   Without them the server serves STUN only; its startup log line says
+   "TURN disabled, STUN only".
 2. Deploy signaling somewhere reachable by both people (set `ALLOWED_ORIGINS` to
    the web URL, and `TRUST_PROXY=1` behind a proxy). Point
    `NEXT_PUBLIC_SIGNALING_URL` at it.
 3. Join the same room from two machines on **different** networks.
 
-The **Network (M2)** panel under the video shows the selected candidate pair
-(`local/remote` type, host / srflx / prflx / relay), RTT, send and receive kbps,
-and the estimated available outgoing bitrate. The pair is read from `getStats()`
-once a second.
+The app shows only a signal indicator (weak above 250 ms RTT). For the selected
+candidate pair (`local/remote` type: host / srflx / prflx / relay), RTT, send
+and receive rate, and available outgoing bitrate, open `chrome://webrtc-internals`
+(`edge://webrtc-internals`, `about:webrtc` in Firefox) during the call.
 
 ## Runs
 

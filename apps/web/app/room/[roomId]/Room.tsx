@@ -338,8 +338,11 @@ export function Room({ roomId }: { roomId: string }) {
         remoteSharing={remoteSharing}
         needsPlayClick={needsPlayClick}
         onPlayClick={() => {
-          void videoRef.current?.play();
-          setNeedsPlayClick(false);
+          // Still refused: keep the button up for another try.
+          videoRef.current?.play().then(
+            () => setNeedsPlayClick(false),
+            () => {},
+          );
         }}
         onPlaying={() => setNeedsPlayClick(false)}
         onShare={share}

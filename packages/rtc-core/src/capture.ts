@@ -38,7 +38,7 @@ export function captureFakeMic(): MediaStreamTrack {
   osc.connect(dest);
   osc.start();
   const track = dest.stream.getAudioTracks()[0]!;
-  track.addEventListener("ended", () => void audioCtx.close());
+  onStop(track, () => void audioCtx.close());
   return track;
 }
 
@@ -73,11 +73,27 @@ export function captureFake(): MediaStream {
   stream.addTrack(audioTrack);
 
   const videoTrack = stream.getVideoTracks()[0]!;
-  videoTrack.addEventListener("ended", () => {
+  onStop(videoTrack, () => {
     clearInterval(timer);
-    osc.stop();
     void audioCtx.close();
   });
   return stream;
+}
+
+/**
+ * Runs `cleanup` once when the track ends, whether it was stopped by us or
+ * ended on its own. `stop()` does not fire "ended", so it is wrapped too.
+ */
+function onStop(track: MediaStreamTrack, cleanup: () => void): void {
+  let done = false;
+  const once = () => {
+    if (!done) (done = true), cleanup();
+  };
+  track.addEventListener("ended", once);
+  const stop = track.stop.bind(track);
+  track.stop = () => {
+    stop();
+    once();
+  };
 }
 
