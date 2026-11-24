@@ -260,8 +260,12 @@ export class PeerSession {
     this.applyLocalShare();
     this.applyLocalVoice();
     this.setPhase("negotiating");
-    await pc.setLocalDescription();
-    this.signaling.send({ kind: "offer", sdp: pc.localDescription!.toJSON() });
+    try {
+      await pc.setLocalDescription();
+      if (this.pc === pc) this.signaling.send({ kind: "offer", sdp: pc.localDescription!.toJSON() });
+    } catch (e) {
+      this.failIfCurrent(pc, e);
+    }
   }
 
   private async handleSignal(msg: SignalMessage): Promise<void> {
@@ -271,30 +275,60 @@ export class PeerSession {
       const pc = this.createPeer();
       this.ctl = this.createControlChannel(pc);
       this.setPhase("negotiating");
-      await pc.setRemoteDescription(msg.sdp);
-      pc.getTransceivers().forEach((t, i) => {
-        t.direction = "sendrecv";
-        if (i < 2) t.sender.setStreams(this.screenMsid);
-      });
-      this.applyLocalShare();
-      this.applyLocalVoice();
-      await pc.setLocalDescription();
-      this.signaling.send({ kind: "answer", sdp: pc.localDescription!.toJSON() });
-      await this.flushCandidates();
+      try {
+        await pc.setRemoteDescription(msg.sdp);
+        pc.getTransceivers().forEach((t, i) => {
+          t.direction = "sendrecv";
+          if (i < 2) t.sender.setStreams(this.screenMsid);
+        });
+        this.applyLocalShare();
+        this.applyLocalVoice();
+        await pc.setLocalDescription();
+        if (this.pc !== pc) return;
+        this.signaling.send({ kind: "answer", sdp: pc.localDescription!.toJSON() });
+        await this.flushCandidates(pc);
+      } catch (e) {
+        this.failIfCurrent(pc, e);
+      }
     } else if (msg.kind === "answer") {
-      if (!this.pc) return;
-      await this.pc.setRemoteDescription(msg.sdp);
-      await this.flushCandidates();
+      const pc = this.pc;
+      // A late or repeated answer (old connection, resent after a reconnect)
+      // has nothing to answer; applying it would throw and end a working call.
+      if (pc?.signalingState !== "have-local-offer") return;
+      try {
+        await pc.setRemoteDescription(msg.sdp);
+        await this.flushCandidates(pc);
+      } catch (e) {
+        this.failIfCurrent(pc, e);
+      }
     } else if (msg.kind === "ice-candidate" && msg.candidate) {
-      if (this.pc?.remoteDescription) await this.pc.addIceCandidate(msg.candidate);
+      if (this.pc?.remoteDescription) await this.addCandidate(this.pc, msg.candidate);
       else this.pendingCandidates.push(msg.candidate);
     }
   }
 
-  private async flushCandidates(): Promise<void> {
+  private async flushCandidates(pc: RTCPeerConnection): Promise<void> {
     const pending = this.pendingCandidates;
     this.pendingCandidates = [];
-    for (const c of pending) await this.pc?.addIceCandidate(c);
+    for (const c of pending) await this.addCandidate(pc, c);
+  }
+
+  /**
+   * One bad candidate (usually from the partner's previous connection, so its
+   * ufrag doesn't match) must not end the call: drop it, ICE uses the rest.
+   * The candidate itself is not logged: it carries IP addresses.
+   */
+  private async addCandidate(pc: RTCPeerConnection, candidate: RTCIceCandidateInit): Promise<void> {
+    try {
+      await pc.addIceCandidate(candidate);
+    } catch (e) {
+      if (this.pc === pc) console.warn("Dropped an ICE candidate:", e instanceof Error ? e.name : e);
+    }
+  }
+
+  /** Errors from a connection that has since been replaced or closed are not this call's failure. */
+  private failIfCurrent(pc: RTCPeerConnection, error: unknown): void {
+    if (this.pc === pc && !this.closed) this.fail(error);
   }
 
   // ---- peer connection ---------------------------------------------------

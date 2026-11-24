@@ -101,6 +101,17 @@ async function runPair(nameA, nameB) {
 
     await b.getByTestId("share").click();
     await check(a, "B shares -> A (no renegotiation)");
+
+    // B leaves mid-share by reloading: A must drop the old call and accept a
+    // fresh one without ending up "failed".
+    b.on("dialog", (d) => void d.accept()); // "Leave site?" while sharing
+    await b.reload();
+    await join(b);
+    await a.getByTestId("phase").filter({ hasText: "connected" }).waitFor({ timeout: 20000 });
+    await b.getByTestId("phase").filter({ hasText: "connected" }).waitFor({ timeout: 20000 });
+    assert(true, "after B reloads, both peers reconnect");
+    await a.getByTestId("share").click();
+    await check(b, "A shares -> B on the new connection");
   } finally {
     await Promise.all(contexts.map((c) => c.close().catch(() => {})));
   }
