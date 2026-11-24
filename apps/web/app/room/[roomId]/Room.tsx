@@ -14,7 +14,7 @@ import {
   type SignalQuality,
 } from "@dagleitv/rtc-core";
 import { currentShareSupport, NO_SHARE_MESSAGE } from "../../browserSupport";
-import { CloseIcon, StopIcon, WarnIcon } from "../../icons";
+import { CloseIcon, PlayIcon, StopIcon, WarnIcon } from "../../icons";
 import { RotatePrompt } from "../../RotatePrompt";
 import { useBrowserSupport } from "../../useBrowserSupport";
 import { EnterRoom, type JoinFailure } from "./EnterRoom";
@@ -356,6 +356,17 @@ export function Room({ roomId }: { roomId: string }) {
             <span className="msg-t">{error}</span>
             <button className="btn btn-sm cut" onClick={() => setError(null)} aria-label="Dismiss">
               <CloseIcon small />
+            </button>
+          </div>
+        )}
+        {voice.voiceBlocked && (
+          <div className={`banner banner-warn cut ${styles.banner}`} role="alert" data-testid="voice-blocked">
+            <WarnIcon />
+            <span className="msg-t">
+              <b>Partner&rsquo;s voice is paused.</b> Your browser blocked it from playing.
+            </span>
+            <button className="btn btn-sm cut" onClick={voice.resumeVoice}>
+              <PlayIcon small /> Play
             </button>
           </div>
         )}

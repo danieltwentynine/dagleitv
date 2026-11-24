@@ -3,9 +3,11 @@ export type BrowserName = "chrome" | "edge" | "opera" | "firefox" | "safari" | "
 export interface BrowserInfo {
   name: BrowserName;
   mobile: boolean;
+  /** Windows or ChromeOS: where screen sharing with system audio is known to work in Chromium. */
+  systemAudioOs: boolean;
 }
 
-/** Best-effort browser sniffing; only used to word advice, never to gate joining. */
+/** Best-effort browser sniffing; only used to word advice, never to gate joining or sharing. */
 export function detectBrowser(ua: string, maxTouchPoints = 0): BrowserInfo {
   // iPadOS reports a desktop Mac UA, so touch points give it away.
   const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && maxTouchPoints > 1);
@@ -15,20 +17,22 @@ export function detectBrowser(ua: string, maxTouchPoints = 0): BrowserInfo {
   else if (/Firefox\/|FxiOS\//.test(ua)) name = "firefox";
   else if (/Chrome\/|CriOS\//.test(ua)) name = "chrome";
   else if (/Safari\//.test(ua)) name = "safari";
-  return { name, mobile };
+  return { name, mobile, systemAudioOs: /Windows|CrOS/.test(ua) };
 }
 
 export type ShareSupport =
-  /** Can share the screen with system audio. */
+  /** Can share, and system audio is known to work here (Chromium on Windows/ChromeOS). */
   | "full"
-  /** Can share the screen, but the browser can't capture system audio. */
+  /** Can share, but system audio is unknown or unavailable. What the capture returns decides. */
   | "no-audio"
-  /** Can't share at all (phones and tablets, or no getDisplayMedia). */
+  /** No getDisplayMedia: this browser can't share at all. */
   | "none";
 
+/** Whether sharing is possible comes from the API alone; the browser name only words the audio advice. */
 export function shareSupport(browser: BrowserInfo, hasGetDisplayMedia: boolean): ShareSupport {
-  if (browser.mobile || !hasGetDisplayMedia) return "none";
-  return browser.name === "chrome" || browser.name === "edge" || browser.name === "opera" ? "full" : "no-audio";
+  if (!hasGetDisplayMedia) return "none";
+  const chromium = browser.name === "chrome" || browser.name === "edge" || browser.name === "opera";
+  return chromium && browser.systemAudioOs ? "full" : "no-audio";
 }
 
 /** Reads the current browser. Client-only: call from an effect to avoid hydration mismatch. */
@@ -38,6 +42,6 @@ export function currentShareSupport(): { browser: BrowserInfo; support: ShareSup
 }
 
 export const NO_SHARE_MESSAGE =
-  "This device can't share its screen. You can still watch and chat. To share, open this link on a computer using Chrome or Edge.";
+  "This browser can't share its screen. You can still watch and chat. To share, open this link on a computer using Chrome or Edge.";
 export const NO_AUDIO_MESSAGE =
-  "This browser can share the screen but not the sound. For movies with audio, use Chrome or Edge on a computer.";
+  "This browser can share the screen, but it may not send the sound. If your partner can't hear the movie, share from Chrome or Edge on Windows.";

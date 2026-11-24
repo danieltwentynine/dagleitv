@@ -38,16 +38,32 @@ export function useVoice(sessionRef: RefObject<PeerSession | null>, { onError, o
   const [remoteVoice, setRemoteVoice] = useState<MediaStream | null>(null);
   const [localSpeaking, setLocalSpeaking] = useState(false);
   const [remoteSpeaking, setRemoteSpeaking] = useState(false);
+  /** The browser refused to autoplay the partner's voice; a click on resumeVoice() fixes it. */
+  const [voiceBlocked, setVoiceBlocked] = useState(false);
 
   // The <audio> is always mounted, so the stream can be attached right away.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !remoteVoice) return;
     audio.srcObject = remoteVoice;
-    audio.play().catch(() => {
-      /* autoplay is allowed after "Enter room"; nothing else to do */
-    });
+    // Usually allowed after the Join click, but not by every browser.
+    audio.play().then(
+      () => setVoiceBlocked(false),
+      (e) => {
+        if (e instanceof Error && e.name === "NotAllowedError") setVoiceBlocked(true);
+      },
+    );
   }, [remoteVoice]);
+
+  /** Call from a click: retries the partner's voice after a blocked autoplay. */
+  const resumeVoice = useCallback(() => {
+    audioRef.current?.play().then(
+      () => setVoiceBlocked(false),
+      () => {
+        /* still blocked: the banner stays */
+      },
+    );
+  }, []);
 
   useEffect(() => {
     const track = micTrackRef.current;
@@ -80,6 +96,7 @@ export function useVoice(sessionRef: RefObject<PeerSession | null>, { onError, o
     setMicState("off");
     setRemoteVoiceState("off");
     setRemoteVoice(null);
+    setVoiceBlocked(false);
   }, []);
 
   const toggleMic = useCallback(async () => {
@@ -121,6 +138,8 @@ export function useVoice(sessionRef: RefObject<PeerSession | null>, { onError, o
     audioRef,
     micState,
     remoteVoiceState,
+    voiceBlocked,
+    resumeVoice,
     localSpeaking: micState === "live" && localSpeaking,
     remoteSpeaking: remoteVoiceState === "live" && remoteSpeaking,
     sessionEvents,
